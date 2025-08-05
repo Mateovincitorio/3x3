@@ -1,0 +1,35 @@
+.body {
+  background: #0B0B0B;
+  color: #F9FAFB;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  height: 100%;
+}
+
+.equipos{
+    text-align: center;
+    margin: 25px;
+}
+
+.contenedorEquipos{
+    overflow: hidden;
+    display: flex;
+    height: 500px;
+    width: 800px;
+    flex-direction: row;
+    justify-content:space-around;
+    gap: 20px;
+    padding-top: 60px;
+    max-width: 900px;
+    margin: 25px auto;
+    flex-wrap: wrap;
+    border-radius: 20px;
+  box-shadow: 0 4px 8px rgba(253, 253, 253, 0.2);
+  background: #58585821;
+}
+.cardEquipo{
+    flex: 0 0 calc(33.33% - 10px); /* Ocupa un tercio menos el gap */
+  box-sizing: border-box;
+}

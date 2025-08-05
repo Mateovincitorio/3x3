@@ -1,0 +1,89 @@
+*{
+  overflow: hidden;
+}
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #1e1e1e;
+  padding: 1rem 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Lista horizontal */
+.navbar ul {
+  overflow: hidden;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 0;
+  margin-left: 50px;
+  padding: 0;
+  position: relative;
+  left:8px;
+  width: 100%;
+}
+
+/* Ítems del nav */
+.liNavbar {
+  overflow: hidden;
+  color: #f1f1f1;
+  font-size: 1rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.liNavbar:hover {
+  color: #f39c12;
+  transform: scale(1.05);
+}
+
+/* Para evitar que el contenido quede debajo del navbar */
+main {
+  margin-top: 80px; /* Ajustá según el alto del navbar */
+  padding: 2rem;
+}
+
+.home{
+    background-image: url('../assets/imagenbaskethome.jpg');
+    background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.texto{
+    position: relative;
+    top: -150px;
+    left: 250px;
+    width: 100%;
+    height: 250px;
+}
+.h1{
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.vertorneos{
+    position: relative;
+    top: 100px;
+    background-color: #1e1e1e ;
+    color: #f1f1f1;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.vertorneos:hover {
+  color: #f39c12;
+  transform: scale(1.05);
+}
