@@ -3,8 +3,11 @@ import './home.css'
 import Navbar from './Navbar'
 import './crearTorneo.css'
 import { db } from '../firebarseConfig.js'
-import { collection, addDoc } from 'firebase/firestore'
-import { useState } from 'react'
+import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { useState, useEffect } from 'react'
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const CrearTorneo = () => {
   const [equipo, setEquipo] = useState({
@@ -14,12 +17,14 @@ const CrearTorneo = () => {
     jugador3: '',
     jugador4: '',
   })
+
   const handleChange = (e) => {
     setEquipo({
       ...equipo,
       [e.target.name]: e.target.value
     });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -32,16 +37,34 @@ const CrearTorneo = () => {
         jugador3: '',
         jugador4: ''
       });
+      toast.success('Equipo creado correctamente', {
+  position: "top-right",
+  autoClose: 5000,
+  hideProgressBar: true,
+  closeOnClick: false,
+  pauseOnHover: true,
+  draggable: true,
+  progress: undefined,
+  theme: "colored",
+  transition: Bounce,
+  style: {
+    backgroundColor: '#800080', // morado oscuro
+    color: '#fff'
+  }
+});
     } catch (error) {
       console.error("Error añadiendo documento: ", error);
     }
+    
   };
+
+
   return (
     <>
     <Navbar/>
     <div className="body">
     <div className="contenedor">
-      <h1 className="añadirh1">añadí los equipos a tu Torneo</h1>
+      <h1 className="añadirh1">Añadí los equipos a tu Torneo</h1>
     </div>
     <div className="formulario">
       <form action="" method="post" onSubmit={handleSubmit}>
@@ -54,6 +77,7 @@ const CrearTorneo = () => {
       </form>
     </div>
     </div>
+    <ToastContainer />
     </>
   )
 }

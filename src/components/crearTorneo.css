@@ -1,11 +1,13 @@
-*{
-  overflow: auto;
-}
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+RO:wght@100..400&family=Quicksand:wght@300..700&display=swap');
+
 .body{
     background: #0B0B0B;
     color: #F9FAFB;
     height: 100vh;
     overflow: hidden;
+}
+.añadirh1{
+  font-family: "Quicksand", sans-serif;
 }
 .contenedor {
   display: flex;

@@ -12,11 +12,23 @@ const Home = () => {
     <>
       <Navbar />
       <div className="home">
-        <div className="texto">
-          <h1>La forma mas practica de organizar un 3x3</h1>
-          <button className="vertorneos" onClick={handleClick}>
-            Ver torneo
-          </button>
+        <h1 className="torneo">Torneo 3x3</h1>
+        <div className="cards">
+          <div className="card">
+            <h2>Agrega equipos</h2>
+            <p>Agrega los equipos que participarán en el torneo.</p>
+            <Link to="/crear" className="link">Ir a Agregar equipos</Link>
+        </div>
+        <div className="card">
+          <h2>Cruces</h2>
+          <p>Genera y visualiza los cruces de los equipos.</p>
+          <Link to="/cruces" className="link">Ir a Cruces</Link>
+        </div>
+        <div className="card">
+          <h2>Equipos</h2>
+          <p>Visualiza y gestiona los equipos participantes.</p>
+          <Link to="/equipos" className="link">Ir a Equipos</Link>
+        </div>
         </div>
       </div>
     </>

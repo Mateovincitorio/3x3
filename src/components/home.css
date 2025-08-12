@@ -1,12 +1,11 @@
-*{
-  overflow: hidden;
-}
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+RO:wght@100..400&family=Quicksand:wght@300..700&display=swap');
+
 .navbar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #1e1e1e;
+  background-color: #131313;
   padding: 1rem 2rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 1000;
@@ -18,7 +17,7 @@
   overflow: hidden;
   list-style: none;
   display: flex;
-  justify-content: center;
+  justify-content:flex-start;
   gap: 2rem;
   margin: 0;
   margin-left: 50px;
@@ -39,6 +38,11 @@
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
+.Link{
+  text-decoration: none;
+  color: inherit; /* Hereda el color del liNavbar */
+}
+
 .liNavbar:hover {
   color: #f39c12;
   transform: scale(1.05);
@@ -50,9 +54,11 @@ main {
   padding: 2rem;
 }
 
-.home{
-    background-image: url('../assets/imagenbaskethome.jpg');
-    background-size: cover;
+.home {
+  background: 
+    linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), /* capa oscura */
+    url('../assets/sara.jpg');
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   width: 100%;
@@ -62,28 +68,99 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  font-family: "Quicksand", sans-serif;
 }
 
+.torneo{
+  font-family: "montserrat", sans-serif;
+  text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    color: #f1f1f1;
+    display: block;
+    position: absolute;
+    left: 45%;
+    top: 150px;
+}
 .texto{
-    position: relative;
-    top: -150px;
-    left: 250px;
-    width: 100%;
-    height: 250px;
+    position: absolute;
+    top: 250px;
+    left: 30%;
+    color: #f1f1f1;
+    overflow: hidden;
+
 }
 .h1{
     text-align: center;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    color: #f1f1f1;
 }
 
 .vertorneos{
-    position: relative;
-    top: 100px;
-    background-color: #1e1e1e ;
+    position: absolute;
+    top: 250px;
+    left: 30%;
     color: #f1f1f1;
+    overflow: hidden;
+    background-color: #1e1e1e ;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 5px;
 }
 .vertorneos:hover {
   color: #f39c12;
+  transform: translateX(5px);
+  transition: transform 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+.cards {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem; /* espacio entre cartas si agregas más */
+  margin-top: 50px;
+}
+
+.card {
+  background-color: #000000b2 !important; 
+  padding: 2rem;
+  border-radius: 15px;
+  width: 280px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.card h2 {
+  font-family: "Quicksand", sans-serif;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #f39c12;
+}
+
+.card p {
+  font-family: "Quicksand", sans-serif;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  color: #f1f1f1;
+}
+
+.card .link {
+  display: inline-block;
+  background-color: #f39c12;
+  color: #1e1e1e;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.card .link:hover {
+  background-color: #ffb347;
   transform: scale(1.05);
 }
