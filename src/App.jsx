@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
-import Home from './components/home';
-import CrearTorneo from './components/crearTorneo';
+import Home from './components/Home';
+import CrearTorneo from './components/CrearTorneo';
 import Cruces from './components/Cruces';
 import Equipos from './components/Equipos';
 
