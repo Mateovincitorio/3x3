@@ -18,8 +18,6 @@ export default defineConfig({
         name: "Torneo 3x3",
         short_name: "3x3",
         description: "App para gestión de torneo 3x3 de básquet",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
         icons: [
