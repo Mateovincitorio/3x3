@@ -57,7 +57,7 @@ main {
 .home {
   background: 
     linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), /* capa oscura */
-    url('../assets/sara.jpg');
+    url('public/sara.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
