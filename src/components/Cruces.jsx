@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import './cruces.css'
 import Navbar from './Navbar'
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebarseConfig.js'
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -19,38 +19,107 @@ const Cruces = () => {
 
 
   useEffect(() => {
-    const fetchEquipos = async () => {
+    const fetchCrucesGanadores = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'equipos'))
-        const equiposData = querySnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, 'crucesGanadores'))
+        const crucesData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         }))
-        setEquipos(equiposData)
+        setCrucesGanadores(crucesData)
       } catch (error) {
-        console.error('Error al obtener los equipos:', error)
+        console.error('Error al obtener los cruces ganadores:', error)
       }
     }
-
-    fetchEquipos()
-    const crucesGuardados = JSON.parse(localStorage.getItem("CrucesPrincipales"))
-    const resultadosGuardados = JSON.parse(localStorage.getItem("Resultados"))
-    const crucesPerdedoresGuardados = JSON.parse(localStorage.getItem("CrucesPerdedores"))
-    const crucesGanadoresGuardados = JSON.parse(localStorage.getItem("CrucesGanadores"))
-    console.log("Resultados guardados en localStorage:", resultadosGuardados)
-    console.log("Cruces guardados en localStorage:", crucesGuardados)
-    console.log("Cruces perdedores guardados en localStorage:", crucesPerdedoresGuardados)
-    console.log("Cruces ganadores guardados en localStorage:", crucesGanadoresGuardados)
-    if (crucesGuardados && resultadosGuardados && crucesPerdedoresGuardados && crucesGanadoresGuardados) {
-      setCruces(crucesGuardados)
-      setResultados(resultadosGuardados)
-      setCrucesPerdedores(crucesPerdedoresGuardados)
-      setCrucesGanadores(crucesGanadoresGuardados)
+  const fetchResultados = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'resultados'))
+      const resultadosData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      setResultados(resultadosData)
+    } catch (error) {
+      console.error('Error al obtener los resultados:', error)
     }
-  }, [])
+  }
 
-  const generarCruces = (equipos) => {
-    let crucesGenerados = []
+  const fetchEquipos = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'equipos'))
+      const equiposData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      setEquipos(equiposData)
+    } catch (error) {
+      console.error('Error al obtener los equipos:', error)
+    }
+  }
+
+  const fetchCruces = async () => {
+    try {
+      const crucesSnapshot = await getDocs(collection(db, "crucesGenerales"));
+      const crucesData = crucesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCruces(crucesData);
+    } catch (error) {
+      console.error("Error al obtener los cruces:", error);
+    }
+  }
+
+  fetchEquipos();
+  fetchCruces();
+  fetchResultados();
+  fetchCrucesGanadores();
+}, []);
+
+  const eliminarColecciones = async () => {
+  try {
+    const colecciones = ['crucesGenerales', 'crucesGanadores', 'resultados', 'equipos', 'jugadores'];
+    
+    for (const nombre of colecciones) {
+      const ref = collection(db, nombre);
+      const snapshot = await getDocs(ref);
+
+      // 👇 Borramos cada documento de la colección
+      const promesas = snapshot.docs.map((d) => 
+        deleteDoc(doc(db, nombre, d.id))
+      );
+
+      await Promise.all(promesas);
+    }
+
+    console.log("Colecciones vaciadas correctamente ✅");
+  } catch (error) {
+    console.error("Error al eliminar colecciones:", error);
+  }
+};
+
+  
+  const generarCruces = async (equipos) => {
+    try {
+      const crucesRef = collection(db, "crucesGenerales");
+      const snapshot = await getDocs(crucesRef);
+
+          toast.success('Cruces ya generados', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+      transition: Bounce,
+      style: {
+        backgroundColor: '#800080', // morado oscuro
+        color: '#fff'
+      }
+      });
+        let crucesGenerados = []
     for (let i = 0; i < equipos.length; i++) {
       for (let j = i + 1; j < equipos.length; j++) {
         crucesGenerados.push({
@@ -59,8 +128,10 @@ const Cruces = () => {
         })
       }
     }
+    for (const cruce of crucesGenerados) {
+      await addDoc(crucesRef, cruce);
+    } 
     setCruces(crucesGenerados)
-    localStorage.setItem("CrucesPrincipales", JSON.stringify(crucesGenerados))
     toast.success('Cruces generados correctamente', {
       position: "top-right",
       autoClose: 5000,
@@ -75,96 +146,52 @@ const Cruces = () => {
         backgroundColor: '#800080', // morado oscuro
         color: '#fff'
       }
-    });
-  }
+    })
+  } catch (error) {
+        console.error("Error al guardar el cruce:", error);
+      }
+    }
 
-  const handleResultado = (equipoA, equipoB, ganador) => {
-    // Evitar duplicados: si ya hay un resultado para ese cruce, reemplazarlo
+  const handleResultado = async (local, visitante, ganador) => {
+  try {
     setResultados((prevResultados) => {
       const indexExistente = prevResultados.findIndex(
-        r => (r.equipoA === equipoA && r.equipoB === equipoB) || (r.equipoA === equipoB && r.equipoB === equipoA)
+        r => (r.equipoA === local && r.equipoB === visitante) || (r.equipoA === visitante && r.equipoB === local)
       )
       if (indexExistente !== -1) {
-        // reemplaza el resultado
         const nuevosResultados = [...prevResultados]
-        nuevosResultados[indexExistente] = { equipoA, equipoB, ganador }
+        nuevosResultados[indexExistente] = { equipoA: local, equipoB: visitante, ganador }
         return nuevosResultados
       }
-      return [...prevResultados, { equipoA, equipoB, ganador }]
+      return [...prevResultados, { equipoA: local, equipoB: visitante, ganador }]
     })
-    localStorage.setItem("Resultados", JSON.stringify([...resultados, { equipoA, equipoB, ganador }]))
-  }
 
-  const handlerCrucesperdedores = () => {
-    const perdedoresUnicos = [...new Set(resultados.map(r => r.equipoA === r.ganador ? r.equipoB : r.equipoA))]
-    setPerdedores(perdedoresUnicos)
-    const cruces = []
-    for (let i=0; i < perdedoresUnicos.length; i++) {
-      for(let j = i + 1; j < perdedoresUnicos.length; j++) {
-        cruces.push({
-          equipoA: perdedoresUnicos[i],
-          equipoB: perdedoresUnicos[j]
-        })
-      }
-    }
-    localStorage.setItem("CrucesPerdedores", JSON.stringify(cruces))
-    setCrucesPerdedores(cruces)
-    toast.success('Cruces entre perdedores generados correctamente', {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
-      transition: Bounce,
-      style: {
-        backgroundColor: '#800080', // morado oscuro
-        color: '#fff'
-      }
+    // 🔥 en Firestore guardamos con un ID único
+    const idResultado = `${local}_vs_${visitante}`
+    await setDoc(doc(db, "resultados", idResultado), {
+      equipoA: local,
+      equipoB: visitante,
+      ganador,
     })
+  } catch (error) {
+    console.error("Error al guardar el resultado:", error);
   }
-  const handlerCrucesGanadores = () => {
-      const ganadoresUnicos = [...new Set(resultados.map(r => r.ganador))]
-      setGanadores(ganadoresUnicos)
-    const cruces = []
-  for (let i = 0; i < ganadoresUnicos.length; i++) {
-    for (let j = i + 1; j < ganadoresUnicos.length; j++) {
-      cruces.push({
-        equipoA: ganadoresUnicos[i],
-        equipoB: ganadoresUnicos[j]
-      })
-    }
-  }
-  setCrucesGanadores(cruces)
-  localStorage.setItem("CrucesGanadores", JSON.stringify(cruces))
-  toast.success('Cruces entre ganadores generados correctamente', {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: false,
-      pauseOnHover: true,
-  draggable: true,
-  progress: undefined,
-  theme: "colored",
-  transition: Bounce,
-  style: {
-    backgroundColor: '#800080', // morado oscuro
-    color: '#fff'
-  }
-});
 }
+
 
     return (
     <>
       <Navbar />
       <div className="body">
         <div className="contenedor">
+          <div className="contenedor-div">
           <button className="boton" onClick={() => generarCruces(equipos)}>
             Generar Cruces
           </button>
-
+          <button className="boton" onClick={() => eliminarColecciones()}>
+            Limpiar cruces y ganadores
+          </button>
+          </div>
           <ul className="lista-cruces">
             {cruces.length === 0 ? (
               <li>No hay cruces generados</li>
@@ -195,36 +222,6 @@ const Cruces = () => {
               </h3>
             ))
           )}
-        </div>
-        <div className="crucesGanadores">
-          <h2>Cruces Ganadores</h2>
-          <button className="botonGanadores boton" onClick={handlerCrucesGanadores}>
-            Obtener Ganadores
-          </button>
-          {crucesGanadores.length === 0 ? (
-  <p>No hay cruces entre ganadores aún</p>
-) : (
-  crucesGanadores.map((cruce, index) => (
-    <h3 key={index}>
-      {cruce.equipoA} vs {cruce.equipoB}
-    </h3>
-  ))
-)}
-        </div>
-        <div className="crucesPerdedores">
-          <h2>Cruces Perdedores</h2>
-          <button className="botonGanadores boton" onClick={handlerCrucesperdedores}>
-            Obtener Ganadores
-          </button>
-          {crucesPerdedores.length === 0 ? (
-  <p>No hay cruces entre perdedores aún</p>
-) : (
-  crucesPerdedores.map((cruce, index) => (
-    <h3 key={index} className="crucePerdedor">
-      {cruce.equipoA} vs {cruce.equipoB}
-    </h3>
-  ))
-)}
         </div>
       </div>
       <ToastContainer />

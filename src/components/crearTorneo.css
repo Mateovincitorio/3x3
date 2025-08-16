@@ -53,6 +53,13 @@ input {
   box-sizing: border-box;
   border: #8B5CF6 solid 2px;
   background: #111827;
+  color: #F9FAFB;
+}
+
+input:focus {
+  border-color: #8B5CF6;
+  outline: none;
+  box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
 }
 
 input::placeholder {

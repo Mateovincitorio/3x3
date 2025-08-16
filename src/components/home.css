@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Playwrite+RO:wght@100..400&family=Quicksand:wght@300..700&display=swap');
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .navbar {
   position: fixed;
   top: 0;
@@ -55,9 +62,8 @@ main {
 }
 
 .home {
-  background: 
-    linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), /* capa oscura */
-    url('public/sara.jpg');
+  background-image: 
+    url('/sara.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
