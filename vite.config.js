@@ -13,6 +13,7 @@ export default defineConfig({
         "robots.txt",
         "apple-touch-icon.png",
         "screenshot.png",
+        "sara.jpg"
       ],
       manifest: {
         name: "Torneo 3x3",
