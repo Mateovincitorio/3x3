@@ -102,10 +102,15 @@ const Equipos = () => {
                     <input type="text" value={formData.jugador2} onChange={(e) => setFormData({ ...formData, jugador2: e.target.value })} />
                     <input type="text" value={formData.jugador3} onChange={(e) => setFormData({ ...formData, jugador3: e.target.value })} />
                     <input type="text" value={formData.jugador4} onChange={(e) => setFormData({ ...formData, jugador4: e.target.value })} />
-                    <input type="text" value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })} />
-                    <input type="text" value={formData.zona} onChange={(e) => setFormData({ ...formData, zona: e.target.value })} />
-                    <button type="submit">Guardar</button>
-                    <button type="button" onClick={() => setEditando(null)}>Cancelar</button>
+                    <select className='select-list' name="categoria" id="" value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}>
+                      <option value="">Seleccionar categoría</option>
+                      <option value="U14">U14</option>
+                      <option value="U16">U16</option>
+                      <option value="U18">U18</option>
+                      <option value="Senior">Senior</option>
+                    </select>
+                    <button className="boton-editar" type="submit">Guardar</button>
+                    <button className="boton-editar" type="button" onClick={() => setEditando(null)}>Cancelar</button>
                   </form>
                 ) : (
                   <>

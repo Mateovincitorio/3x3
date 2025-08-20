@@ -14,17 +14,15 @@ const CrearTorneo = () => {
     jugador2: '',
     jugador3: '',
     jugador4: '',
-    categoria: '',
-    zona: ''
+    categoria: ''
   });
 
   // Manejar cambios en los inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setEquipo({
       ...equipo,
-      [name]: name === 'zona' ? value.toUpperCase() : value
+      [name]: value
     });
   };
 
@@ -60,8 +58,7 @@ const CrearTorneo = () => {
         jugador2: '',
         jugador3: '',
         jugador4: '',
-        categoria: '',
-        zona: ''
+        categoria: ''
       });
 
       toast.success('Equipo y jugadores creados correctamente', {
@@ -152,14 +149,6 @@ const CrearTorneo = () => {
               <option value="senior">Senior</option>
             </select>
 
-            <input
-              type="text"
-              name="zona"
-              value={equipo.zona}
-              onChange={handleChange}
-              placeholder="Zona"
-              required
-            />
 
             <button className="crearEquipo" type="submit">Crear Equipo</button>
             <button className="crearEquipo" type="button" onClick={() => window.location.href = '/'}>Volver a Home</button>

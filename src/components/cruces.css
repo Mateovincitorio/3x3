@@ -40,8 +40,20 @@
   box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
   transition: background-color 0.3s ease, transform 0.2s ease;
   cursor: pointer;
-  height: px;
   margin-bottom: 20px;
+}
+
+.boton-editar {
+overflow: hidden;
+  background-color: #8B5CF6;
+  color: #F9FAFB;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 10px;
 }
 
 .boton:hover {
