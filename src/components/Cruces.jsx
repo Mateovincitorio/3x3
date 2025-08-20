@@ -1,197 +1,165 @@
-import React, { useEffect, useState } from 'react'
-import './cruces.css'
-import Navbar from './Navbar'
-import { collection, getDocs, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '../firebarseConfig.js'
+import React, { useEffect, useState } from 'react';
+import './cruces.css';
+import Navbar from './Navbar';
+import { collection, getDocs, addDoc, doc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db } from '../firebarseConfig.js';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
-
 const Cruces = () => {
-  const [equipos, setEquipos] = useState([])
-  const [cruces, setCruces] = useState([])
-  const [resultados, setResultados] = useState([])
-  const [ganadores, setGanadores] = useState([])
-  const [crucesGanadores, setCrucesGanadores] = useState([])
-  const [perdedores, setPerdedores] = useState([])
-  const [crucesPerdedores, setCrucesPerdedores] = useState([])
+  const [categoriaSel, setCategoriaSel] = useState('');
+  const [equipos, setEquipos] = useState([]);
+  const [cruces, setCruces] = useState([]);
+  const [resultados, setResultados] = useState([]);
 
-
+  // Traer equipos al inicio
   useEffect(() => {
-    const fetchCrucesGanadores = async () => {
+    const fetchEquipos = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'crucesGanadores'))
-        const crucesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        setCrucesGanadores(crucesData)
+        const snapshot = await getDocs(collection(db, 'equipos'));
+        const equiposData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEquipos(equiposData);
       } catch (error) {
-        console.error('Error al obtener los cruces ganadores:', error)
+        console.error('Error al obtener equipos:', error);
+      }
+    };
+    fetchEquipos();
+  }, []);
+
+  // Traer cruces filtrando por categoría
+  useEffect(() => {
+    const fetchCrucesPorCategoria = async () => {
+      if (!categoriaSel) {
+        setCruces([]); // Limpiar si no hay categoría
+        return;
+      }
+      try {
+        const q = query(collection(db, 'crucesGenerales'), where('categoria', '==', categoriaSel));
+        const snapshot = await getDocs(q);
+        const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCruces(crucesData);
+      } catch (error) {
+        console.error('Error al obtener cruces:', error);
+      }
+    };
+    fetchCrucesPorCategoria();
+  }, [categoriaSel]);
+
+  // Traer resultados
+  useEffect(() => {
+    const fetchResultados = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'resultados'));
+        const resultadosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setResultados(resultadosData);
+      } catch (error) {
+        console.error('Error al obtener resultados:', error);
+      }
+    };
+    fetchResultados();
+  }, []);
+
+  const obtenerEquiposCategoria = async (categoria) => {
+    const ref = collection(db, 'categorias', categoria, 'equipos');
+    const snapshot = await getDocs(ref);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  };
+
+  const generarCruces = async () => {
+    if (!categoriaSel) {
+      toast.error('Seleccioná una categoría primero');
+      return;
+    }
+
+    const equiposCat = await obtenerEquiposCategoria(categoriaSel);
+
+    if (equiposCat.length < 2) {
+      toast.info('No hay suficientes equipos en la categoría seleccionada');
+      return;
+    }
+
+    const crucesArr = [];
+    for (let i = 0; i < equiposCat.length; i++) {
+      for (let j = i + 1; j < equiposCat.length; j++) {
+        crucesArr.push({
+          equipoA: equiposCat[i].nombre,
+          equipoB: equiposCat[j].nombre,
+          categoria: categoriaSel
+        });
       }
     }
-  const fetchResultados = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'resultados'))
-      const resultadosData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-      setResultados(resultadosData)
-    } catch (error) {
-      console.error('Error al obtener los resultados:', error)
-    }
-  }
 
-  const fetchEquipos = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'equipos'))
-      const equiposData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
-      setEquipos(equiposData)
-    } catch (error) {
-      console.error('Error al obtener los equipos:', error)
-    }
-  }
+    // Guardar en Firestore
+    const ref = collection(db, 'crucesGenerales');
+    await Promise.all(crucesArr.map(c => addDoc(ref, c)));
 
-  const fetchCruces = async () => {
-    try {
-      const crucesSnapshot = await getDocs(collection(db, "crucesGenerales"));
-      const crucesData = crucesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setCruces(crucesData);
-    } catch (error) {
-      console.error("Error al obtener los cruces:", error);
-    }
-  }
+    setCruces(crucesArr);
 
-  fetchEquipos();
-  fetchCruces();
-  fetchResultados();
-  fetchCrucesGanadores();
-}, []);
-
-  const eliminarColecciones = async () => {
-  try {
-    const colecciones = ['crucesGenerales', 'crucesGanadores', 'resultados', 'equipos', 'jugadores'];
-    
-    for (const nombre of colecciones) {
-      const ref = collection(db, nombre);
-      const snapshot = await getDocs(ref);
-
-      // 👇 Borramos cada documento de la colección
-      const promesas = snapshot.docs.map((d) => 
-        deleteDoc(doc(db, nombre, d.id))
-      );
-
-      await Promise.all(promesas);
-    }
-
-    console.log("Colecciones vaciadas correctamente ✅");
-  } catch (error) {
-    console.error("Error al eliminar colecciones:", error);
-  }
-};
-
-  
-  const generarCruces = async (equipos) => {
-    try {
-      const crucesRef = collection(db, "crucesGenerales");
-      const snapshot = await getDocs(crucesRef);
-
-          toast.success('Cruces ya generados', {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
-      transition: Bounce,
-      style: {
-        backgroundColor: '#800080', // morado oscuro
-        color: '#fff'
-      }
-      });
-        let crucesGenerados = []
-    for (let i = 0; i < equipos.length; i++) {
-      for (let j = i + 1; j < equipos.length; j++) {
-        crucesGenerados.push({
-          equipoA: equipos[i].nombre,
-          equipoB: equipos[j].nombre
-        })
-      }
-    }
-    for (const cruce of crucesGenerados) {
-      await addDoc(crucesRef, cruce);
-    } 
-    setCruces(crucesGenerados)
     toast.success('Cruces generados correctamente', {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
+      theme: 'colored',
       transition: Bounce,
-      style: {
-        backgroundColor: '#800080', // morado oscuro
-        color: '#fff'
-      }
-    })
-  } catch (error) {
-        console.error("Error al guardar el cruce:", error);
-      }
-    }
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+  };
 
   const handleResultado = async (local, visitante, ganador) => {
-  try {
-    setResultados((prevResultados) => {
-      const indexExistente = prevResultados.findIndex(
+    setResultados(prev => {
+      const indexExistente = prev.findIndex(
         r => (r.equipoA === local && r.equipoB === visitante) || (r.equipoA === visitante && r.equipoB === local)
-      )
+      );
       if (indexExistente !== -1) {
-        const nuevosResultados = [...prevResultados]
-        nuevosResultados[indexExistente] = { equipoA: local, equipoB: visitante, ganador }
-        return nuevosResultados
+        const nuevos = [...prev];
+        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador };
+        return nuevos;
       }
-      return [...prevResultados, { equipoA: local, equipoB: visitante, ganador }]
-    })
+      return [...prev, { equipoA: local, equipoB: visitante, ganador }];
+    });
 
-    // 🔥 en Firestore guardamos con un ID único
-    const idResultado = `${local}_vs_${visitante}`
-    await setDoc(doc(db, "resultados", idResultado), {
+    const idResultado = `${local}_vs_${visitante}`;
+    await setDoc(doc(db, 'resultados', idResultado), {
       equipoA: local,
       equipoB: visitante,
       ganador,
-    })
-  } catch (error) {
-    console.error("Error al guardar el resultado:", error);
-  }
-}
+    });
+  };
 
+  const eliminarColecciones = async () => {
+    try {
+      const colecciones = ['crucesGenerales', 'resultados', 'equipos', 'jugadores'];
+      for (const nombre of colecciones) {
+        const snapshot = await getDocs(collection(db, nombre));
+        const promesas = snapshot.docs.map(d => deleteDoc(doc(db, nombre, d.id)));
+        await Promise.all(promesas);
+      }
+      setCruces([]);
+      setResultados([]);
+      toast.success('Colecciones eliminadas ✅', {
+        theme: 'colored',
+        transition: Bounce,
+        style: { backgroundColor: '#800080', color: '#fff' }
+      });
+    } catch (error) {
+      console.error('Error al eliminar colecciones:', error);
+    }
+  };
 
-    return (
+  return (
     <>
       <Navbar />
       <div className="body">
         <div className="contenedor">
           <div className="contenedor-div">
-          <button className="boton" onClick={() => generarCruces(equipos)}>
-            Generar Cruces
-          </button>
-          <button className="boton" onClick={() => eliminarColecciones()}>
-            Limpiar cruces y ganadores
-          </button>
+            <button className="boton" onClick={generarCruces}>Generar Cruces</button>
+            <select className="select-list" value={categoriaSel} onChange={(e) => setCategoriaSel(e.target.value)}>
+              <option value="">Seleccionar categoría</option>
+              <option value="U14">U14</option>
+              <option value="U16">U16</option>
+              <option value="U18">U18</option>
+              <option value="Senior">Senior</option>
+            </select>
+            <button className="boton" onClick={eliminarColecciones}>Limpiar cruces y ganadores</button>
           </div>
+
           <ul className="lista-cruces">
             {cruces.length === 0 ? (
               <li>No hay cruces generados</li>
@@ -216,9 +184,9 @@ const Cruces = () => {
           {resultados.length === 0 ? (
             <p>No hay resultados aún</p>
           ) : (
-            resultados.map((resultado, index) => (
+            resultados.map((r, index) => (
               <h3 key={index}>
-                {resultado.equipoA} vs {resultado.equipoB} - Ganador: <strong>{resultado.ganador}</strong>
+                {r.equipoA} vs {r.equipoB} - Ganador: <strong>{r.ganador}</strong>
               </h3>
             ))
           )}
@@ -226,7 +194,7 @@ const Cruces = () => {
       </div>
       <ToastContainer />
     </>
-  )
-}
+  );
+};
 
-export default Cruces
+export default Cruces;

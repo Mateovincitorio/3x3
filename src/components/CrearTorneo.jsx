@@ -20,9 +20,11 @@ const CrearTorneo = () => {
 
   // Manejar cambios en los inputs
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setEquipo({
       ...equipo,
-      [e.target.name]: e.target.value
+      [name]: name === 'zona' ? value.toUpperCase() : value
     });
   };
 
@@ -30,11 +32,11 @@ const CrearTorneo = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 1. Guardar el equipo completo
       const docRef = await addDoc(collection(db, "equipos"), equipo);
       console.log("Equipo creado con ID: ", docRef.id);
 
-      // 2. Guardar jugadores individuales en la colección "jugadores"
+      await addDoc(collection(db,"categorias",equipo.categoria,"equipos"),{...equipo, id: docRef.id});
+      
       const jugadoresArray = [
         equipo.jugador1,
         equipo.jugador2,
@@ -46,13 +48,12 @@ const CrearTorneo = () => {
         if (jugador.trim() !== "") {
           await addDoc(collection(db, "jugadores"), {
             nombre: jugador,
-            equipoId: docRef.id,   // Relación con el equipo
+            equipoId: docRef.id,
             categoria: equipo.categoria
           });
         }
       }
 
-      // 3. Resetear formulario
       setEquipo({
         nombre: '',
         jugador1: '',
@@ -63,7 +64,6 @@ const CrearTorneo = () => {
         zona: ''
       });
 
-      // 4. Notificación
       toast.success('Equipo y jugadores creados correctamente', {
         position: "top-right",
         autoClose: 5000,
@@ -71,7 +71,6 @@ const CrearTorneo = () => {
         closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
-        progress: undefined,
         theme: "colored",
         transition: Bounce,
         style: {
@@ -98,13 +97,70 @@ const CrearTorneo = () => {
         </div>
         <div className="formulario">
           <form onSubmit={handleSubmit}>
-            <input type="text" name="nombre" value={equipo.nombre} onChange={handleChange} placeholder="Nombre del equipo" required />
-            <input type="text" name="jugador1" value={equipo.jugador1} onChange={handleChange} placeholder="Nombre del jugador 1" required />
-            <input type="text" name="jugador2" value={equipo.jugador2} onChange={handleChange} placeholder="Nombre del jugador 2" required />
-            <input type="text" name="jugador3" value={equipo.jugador3} onChange={handleChange} placeholder="Nombre del jugador 3" required />
-            <input type="text" name="jugador4" value={equipo.jugador4} onChange={handleChange} placeholder="Nombre del jugador 4" required />
-            <input type="text" name="categoria" value={equipo.categoria} onChange={handleChange} placeholder="Categoría" required />
-            <input type='text' name='zona' value={equipo.zona} onChange={handleChange} placeholder='Zona' required />
+            <input
+              type="text"
+              name="nombre"
+              value={equipo.nombre}
+              onChange={handleChange}
+              placeholder="Nombre del equipo"
+              required
+            />
+            <input
+              type="text"
+              name="jugador1"
+              value={equipo.jugador1}
+              onChange={handleChange}
+              placeholder="Nombre del jugador 1"
+              required
+            />
+            <input
+              type="text"
+              name="jugador2"
+              value={equipo.jugador2}
+              onChange={handleChange}
+              placeholder="Nombre del jugador 2"
+              required
+            />
+            <input
+              type="text"
+              name="jugador3"
+              value={equipo.jugador3}
+              onChange={handleChange}
+              placeholder="Nombre del jugador 3"
+              required
+            />
+            <input
+              type="text"
+              name="jugador4"
+              value={equipo.jugador4}
+              onChange={handleChange}
+              placeholder="Nombre del jugador 4"
+              required
+            />
+
+            <select
+              name="categoria"
+              className="select-list"
+              value={equipo.categoria}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Seleccionar categoría</option>
+              <option value="U14">U14</option>
+              <option value="U16">U16</option>
+              <option value="U18">U18</option>
+              <option value="senior">Senior</option>
+            </select>
+
+            <input
+              type="text"
+              name="zona"
+              value={equipo.zona}
+              onChange={handleChange}
+              placeholder="Zona"
+              required
+            />
+
             <button className="crearEquipo" type="submit">Crear Equipo</button>
             <button className="crearEquipo" type="button" onClick={() => window.location.href = '/'}>Volver a Home</button>
           </form>

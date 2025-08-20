@@ -96,3 +96,19 @@ position: relative;
 top: -260px;
 left: 75px;
 }
+
+.select-list{
+  background: #111827;
+  color: #F9FAFB;
+  padding: 10px;
+  border: #8B5CF6 solid 2px;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.select-list:focus {
+  border-color: #8B5CF6;
+  outline: none;
+  box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+}
