@@ -114,6 +114,7 @@ const Equipos = () => {
                   </form>
                 ) : (
                   <>
+                  
                     <h2>{equipo.nombre}</h2>
                     <button className="boton" onClick={(e) => handleDelete(equipo.id, e)}>Eliminar</button>
                     <button className="boton" onClick={() => handleEdit(equipo)}>Editar</button>
