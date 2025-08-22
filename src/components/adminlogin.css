@@ -1,0 +1,24 @@
+/* Importar fuentes */
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+RO:wght@100..400&family=Quicksand:wght@300..700&display=swap');
+
+body {
+  background: #0B0B0B;
+  color: #F9FAFB;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  height: 100%;
+}
+
+.contenedor{
+    background: #374151;
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 30px 25px;
+    text-align: center;
+    border-radius: 15px;
+    height: fit-content;
+    box-shadow: 0 4px 8px rgba(253, 253, 253, 0.2);
+    font-family: "Quicksand", sans-serif;
+}
