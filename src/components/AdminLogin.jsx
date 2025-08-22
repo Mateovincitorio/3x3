@@ -35,6 +35,7 @@ export default function AdminLogin({ onLogin }) {
   };
 
   return (
+    
     <div className="contenedor">
   <h2 className="login-title">Login Admin</h2>
   <form onSubmit={handleLogin} className="login-form">
