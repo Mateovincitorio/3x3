@@ -3,7 +3,8 @@ import './home.css';
 import Navbar from './Navbar';
 import './crearTorneo.css';
 import { db } from '../firebarseConfig.js';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, where } from 'firebase/firestore';
+
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -26,64 +27,88 @@ const CrearTorneo = () => {
     });
   };
 
-  // Manejar submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const docRef = await addDoc(collection(db, "equipos"), equipo);
-      console.log("Equipo creado con ID: ", docRef.id);
 
-      await addDoc(collection(db,"categorias",equipo.categoria,"equipos"),{...equipo, id: docRef.id});
-      
-      const jugadoresArray = [
-        equipo.jugador1,
-        equipo.jugador2,
-        equipo.jugador3,
-        equipo.jugador4
-      ];
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    console.log("Equipo a guardar:", equipo);
 
-      for (let jugador of jugadoresArray) {
-        if (jugador.trim() !== "") {
-          await addDoc(collection(db, "jugadores"), {
-            nombre: jugador,
-            equipoId: docRef.id,
-            categoria: equipo.categoria
-          });
-        }
+    // Crear equipo en la colección principal
+    const docRef = await addDoc(collection(db, "equipos"), equipo);
+    console.log("Equipo creado con ID: ", docRef.id);
+
+    // Crear el equipo dentro de la subcolección de la categoría
+    console.log("Guardando en categoria:", equipo.categoria);
+    await setDoc(
+      doc(db, "categorias", equipo.categoria, "equipos", docRef.id),
+      { ...equipo, id: docRef.id }
+    );
+    console.log("Equipo guardado en categoria");
+
+    // Crear jugadores
+    const jugadoresArray = [
+      equipo.jugador1,
+      equipo.jugador2,
+      equipo.jugador3,
+      equipo.jugador4
+    ];
+
+    for (let jugador of jugadoresArray) {
+      if (jugador.trim() !== "") {
+        console.log("Creando jugador:", jugador);
+        await addDoc(collection(db, "jugadores"), {
+          nombre: jugador,
+          equipoId: docRef.id,
+          categoria: equipo.categoria
+        });
       }
-
-      setEquipo({
-        nombre: '',
-        jugador1: '',
-        jugador2: '',
-        jugador3: '',
-        jugador4: '',
-        categoria: ''
-      });
-
-      toast.success('Equipo y jugadores creados correctamente', {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-        transition: Bounce,
-        style: {
-          backgroundColor: '#800080',
-          color: '#fff'
-        }
-      });
-    } catch (error) {
-      console.error("Error añadiendo documento: ", error);
-      toast.error('Ocurrió un error al crear el equipo', {
-        position: "top-right",
-        autoClose: 5000,
-        theme: "colored"
-      });
     }
-  };
+    console.log("Jugadores creados");
+
+    // Reset form
+    setEquipo({
+      nombre: '',
+      jugador1: '',
+      jugador2: '',
+      jugador3: '',
+      jugador4: '',
+      categoria: ''
+    });
+
+    toast.success('Equipo y jugadores creados correctamente', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+      transition: Bounce,
+      style: {
+        backgroundColor: '#800080',
+        color: '#fff'
+      }
+    });
+  } catch (error) {
+    console.error("🔥 Error en handleSubmit:", error);
+    toast.error('Ocurrió un error al crear el equipo', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+      transition: Bounce,
+      style: {
+        backgroundColor: '#800080',
+        color: '#fff'
+      }
+    });
+  }
+};
+
+
 
   return (
     <>
