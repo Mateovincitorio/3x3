@@ -60,47 +60,55 @@ const Cruces = () => {
   }, []);
 
   const obtenerEquiposCategoria = async (categoria) => {
-    const ref = collection(db, 'categorias', categoria, 'equipos');
-    const snapshot = await getDocs(ref);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  };
+  const q = query(collection(db, 'equipos'), where('categoria', '==', categoria));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
 
   const generarCruces = async () => {
-    if (!categoriaSel) {
-      toast.error('Seleccioná una categoría primero');
-      return;
+  if (!categoriaSel) {
+    toast.error('Seleccioná una categoría primero');
+    return;
+  }
+
+  const equiposCat = await obtenerEquiposCategoria(categoriaSel);
+console.log("Equipos de la categoría:", equiposCat);
+
+  if (equiposCat.length < 2) {
+    toast.info('No hay suficientes equipos en la categoría seleccionada');
+    return;
+  }
+
+  const crucesArr = [];
+  for (let i = 0; i < equiposCat.length; i++) {
+    for (let j = i + 1; j < equiposCat.length; j++) {
+      crucesArr.push({
+        equipoA: equiposCat[i].nombre,
+        equipoB: equiposCat[j].nombre,
+        categoria: categoriaSel
+      });
     }
+  }
 
-    const equiposCat = await obtenerEquiposCategoria(categoriaSel);
+  // Guardar en Firestore
+  const ref = collection(db, 'crucesGenerales');
+  await Promise.all(crucesArr.map(c => addDoc(ref, c)));
 
-    if (equiposCat.length < 2) {
-      toast.info('No hay suficientes equipos en la categoría seleccionada');
-      return;
-    }
+  // 🔥 Vuelve a consultar Firestore y actualiza el estado
+  const q = query(collection(db, 'crucesGenerales'), where('categoria', '==', categoriaSel));
+  const snapshot = await getDocs(q);
+  const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  setCruces(crucesData);
 
-    const crucesArr = [];
-    for (let i = 0; i < equiposCat.length; i++) {
-      for (let j = i + 1; j < equiposCat.length; j++) {
-        crucesArr.push({
-          equipoA: equiposCat[i].nombre,
-          equipoB: equiposCat[j].nombre,
-          categoria: categoriaSel
-        });
-      }
-    }
+  toast.success('Cruces generados correctamente', {
+    theme: 'colored',
+    transition: Bounce,
+    style: { backgroundColor: '#800080', color: '#fff' }
+  });
+  
+};
 
-    // Guardar en Firestore
-    const ref = collection(db, 'crucesGenerales');
-    await Promise.all(crucesArr.map(c => addDoc(ref, c)));
-
-    setCruces(crucesArr);
-
-    toast.success('Cruces generados correctamente', {
-      theme: 'colored',
-      transition: Bounce,
-      style: { backgroundColor: '#800080', color: '#fff' }
-    });
-  };
 
   const handleResultado = async (local, visitante, ganador) => {
     setResultados(prev => {
