@@ -74,6 +74,8 @@ const handleSubmit = async (e) => {
       equipo
     );
     console.log("Equipo creado en fase", equipo.fase, "con ID:", docRef.id);
+    const docRef2 = await addDoc(collection(db, "equipos"),equipo);
+    console.log("Equipo creado en fase", equipo.fase, "con ID:", docRef2.id);
 
     // 3️⃣ Crear jugadores
     const jugadoresArray = [
