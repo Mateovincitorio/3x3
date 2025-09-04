@@ -3,7 +3,7 @@ import './home.css';
 import Navbar from './Navbar';
 import './crearTorneo.css';
 import { db } from '../firebarseConfig.js';
-import { collection, addDoc, doc, setDoc, where } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, where, query, getDocs } from 'firebase/firestore';
 
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -33,6 +33,26 @@ const handleSubmit = async (e) => {
   try {
     console.log("Equipo a guardar:", equipo);
 
+    // verifico que no hayan 2 equipos con los mismos nombres en la misma categoria
+    const q = query (collection(db,'equipos'), where("nombre","==", equipo.nombre),where("categoria","==",equipo.categoria))
+    const querySnapshot = await getDocs(q)
+    if (!querySnapshot.empty) {
+      toast.error('Ya existe un equipo con el mismo nombre en esta categoría. Por favor, elige otro nombre.', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+      transition: Bounce,
+      style: {
+        backgroundColor: '#800080',
+        color: '#fff'
+    }
+  });
+      return;
+    }
     // Crear equipo en la colección principal
     const docRef = await addDoc(collection(db, "equipos"), equipo);
     console.log("Equipo creado con ID: ", docRef.id);

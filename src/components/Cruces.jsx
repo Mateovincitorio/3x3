@@ -83,6 +83,8 @@ console.log("Equipos de la categoría:", equiposCat);
   const crucesArr = [];
   for (let i = 0; i < equiposCat.length; i++) {
     for (let j = i + 1; j < equiposCat.length; j++) {
+      console.log("Cruce a guardar:", crucesArr);
+
       crucesArr.push({
         equipoA: equiposCat[i].nombre,
         equipoB: equiposCat[j].nombre,
@@ -93,6 +95,8 @@ console.log("Equipos de la categoría:", equiposCat);
 
   // Guardar en Firestore
   const ref = collection(db, 'crucesGenerales');
+  console.log("Cruce a guardar:", crucesArr);
+
   await Promise.all(crucesArr.map(c => addDoc(ref, c)));
 
   // 🔥 Vuelve a consultar Firestore y actualiza el estado
