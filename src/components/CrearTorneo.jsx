@@ -15,7 +15,8 @@ const CrearTorneo = () => {
     jugador2: '',
     jugador3: '',
     jugador4: '',
-    categoria: ''
+    categoria: '',
+    fase: ''
   });
 
   // Manejar cambios en los inputs
@@ -30,42 +31,51 @@ const CrearTorneo = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  // 🔹 1. Revisar qué valores tienen fase y categoría
+  console.log("Fase:", equipo.fase);
+  console.log("Categoría:", equipo.categoria);
   try {
     console.log("Equipo a guardar:", equipo);
 
-    // verifico que no hayan 2 equipos con los mismos nombres en la misma categoria
-    const q = query (collection(db,'equipos'), where("nombre","==", equipo.nombre),where("categoria","==",equipo.categoria))
-    const querySnapshot = await getDocs(q)
-    if (!querySnapshot.empty) {
-      toast.error('Ya existe un equipo con el mismo nombre en esta categoría. Por favor, elige otro nombre.', {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: true,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      theme: "colored",
-      transition: Bounce,
-      style: {
-        backgroundColor: '#800080',
-        color: '#fff'
+    // 1️⃣ Verificar duplicados en todas las fases
+    const fases = ["fase_de_grupos", "semifinales", "finales"];
+    let duplicado = false;
+
+    for (let fase of fases) {
+      const q = query(
+        collection(db, `${fase}/${equipo.categoria}/equipos`),
+        where("nombre", "==", equipo.nombre)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        duplicado = true;
+        break;
+      }
     }
-  });
+
+    if (duplicado) {
+      toast.error('Ya existe un equipo con el mismo nombre en esta categoría.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+        transition: Bounce,
+        style: { backgroundColor: '#800080', color: '#fff' }
+      });
       return;
     }
-    // Crear equipo en la colección principal
-    const docRef = await addDoc(collection(db, "equipos"), equipo);
-    console.log("Equipo creado con ID: ", docRef.id);
 
-    // Crear el equipo dentro de la subcolección de la categoría
-    console.log("Guardando en categoria:", equipo.categoria);
-    await setDoc(
-      doc(db, "categorias", equipo.categoria, "equipos", docRef.id),
-      { ...equipo, id: docRef.id }
+    // 2️⃣ Guardar el equipo en la fase seleccionada -> categoría -> equipos
+    const docRef = await addDoc(
+      collection(db, `${equipo.fase}/${equipo.categoria}/equipos`),
+      equipo
     );
-    console.log("Equipo guardado en categoria");
+    console.log("Equipo creado en fase", equipo.fase, "con ID:", docRef.id);
 
-    // Crear jugadores
+    // 3️⃣ Crear jugadores
     const jugadoresArray = [
       equipo.jugador1,
       equipo.jugador2,
@@ -75,7 +85,6 @@ const handleSubmit = async (e) => {
 
     for (let jugador of jugadoresArray) {
       if (jugador.trim() !== "") {
-        console.log("Creando jugador:", jugador);
         await addDoc(collection(db, "jugadores"), {
           nombre: jugador,
           equipoId: docRef.id,
@@ -85,16 +94,18 @@ const handleSubmit = async (e) => {
     }
     console.log("Jugadores creados");
 
-    // Reset form
+    // 4️⃣ Resetear formulario
     setEquipo({
       nombre: '',
       jugador1: '',
       jugador2: '',
       jugador3: '',
       jugador4: '',
-      categoria: ''
+      categoria: '',
+      fase: ''
     });
 
+    // 5️⃣ Notificación de éxito
     toast.success('Equipo y jugadores creados correctamente', {
       position: "top-right",
       autoClose: 5000,
@@ -104,11 +115,9 @@ const handleSubmit = async (e) => {
       draggable: true,
       theme: "colored",
       transition: Bounce,
-      style: {
-        backgroundColor: '#800080',
-        color: '#fff'
-      }
+      style: { backgroundColor: '#800080', color: '#fff' }
     });
+
   } catch (error) {
     console.error("🔥 Error en handleSubmit:", error);
     toast.error('Ocurrió un error al crear el equipo', {
@@ -120,13 +129,11 @@ const handleSubmit = async (e) => {
       draggable: true,
       theme: "colored",
       transition: Bounce,
-      style: {
-        backgroundColor: '#800080',
-        color: '#fff'
-      }
+      style: { backgroundColor: '#800080', color: '#fff' }
     });
   }
 };
+
 
 
 
@@ -193,7 +200,18 @@ const handleSubmit = async (e) => {
               <option value="U18">U18</option>
               <option value="senior">Senior</option>
             </select>
-
+          <select
+            name="fase"
+            className='select-list'
+            value={equipo.fase}
+            onChange={handleChange}
+            required
+          >         
+            <option value="">Seleccionar fase</option>
+            <option value="fase_de_grupos">Fase de Grupos</option>
+            <option value="semifinales">Semifinales</option>
+            <option value="finales">Final</option>
+          </select>
 
             <button className="crearEquipo" type="submit">Crear Equipo</button>
             <button className="crearEquipo" type="button" onClick={() => window.location.href = '/'}>Volver a Home</button>

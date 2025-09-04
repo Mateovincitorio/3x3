@@ -8,33 +8,59 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const Cruces = () => {
   const [categoriaSel, setCategoriaSel] = useState('');
-  const [equipos, setEquipos] = useState([]);
+  const [faseSel, setFaseSel] = useState('');
+  const [equipos, setEquipos] = useState([]); // 👈 ahora depende de fase/categoria
   const [cruces, setCruces] = useState([]);
   const [resultados, setResultados] = useState([]);
 
-  // Traer equipos al inicio
+  // 👉 obtener equipos de la ruta fase/categoria/equipos
+  const obtenerEquiposCategoria = async (fase, categoria) => {
+    if (!fase || !categoria) return [];
+    const equiposRef = collection(db, `${fase}/${categoria}/equipos`);
+    const snapshot = await getDocs(equiposRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  };
+
+  // 👉 cargar equipos cuando se cambia fase o categoría
   useEffect(() => {
     const fetchEquipos = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'equipos'));
-        const equiposData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setEquipos(equiposData);
-      } catch (error) {
-        console.error('Error al obtener equipos:', error);
-      }
-    };
-    fetchEquipos();
-  }, []);
-
-  // Traer cruces filtrando por categoría
-  useEffect(() => {
-    const fetchCrucesPorCategoria = async () => {
-      if (!categoriaSel) {
-        setCruces([]); // Limpiar si no hay categoría
+      if (!faseSel || !categoriaSel) {
+        setEquipos([]);
         return;
       }
       try {
-        const q = query(collection(db, 'crucesGenerales'), where('categoria', '==', categoriaSel));
+        const equiposCat = await obtenerEquiposCategoria(faseSel, categoriaSel);
+        setEquipos(equiposCat);
+      } catch (error) {
+        toast.error('Error al cargar equipos', {
+          position: 'top-right',
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: 'dark',
+        });
+        console.error('Error al cargar equipos:', error);
+      }
+    };
+    fetchEquipos();
+  }, [faseSel, categoriaSel]);
+
+  // 👉 cargar cruces cuando se cambia fase o categoría
+  useEffect(() => {
+    const fetchCruces = async () => {
+      if (!categoriaSel || !faseSel) {
+        setCruces([]);
+        return;
+      }
+      try {
+        const q = query(
+          collection(db, 'crucesGenerales'),
+          where('categoria', '==', categoriaSel),
+          where('fase', '==', faseSel)
+        );
         const snapshot = await getDocs(q);
         const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setCruces(crucesData);
@@ -42,11 +68,11 @@ const Cruces = () => {
         console.error('Error al obtener cruces:', error);
       }
     };
-    fetchCrucesPorCategoria();
-  }, [categoriaSel]);
+    fetchCruces();
+  }, [categoriaSel, faseSel]);
 
-  // Traer resultados
-  useEffect(() => {
+  // 👉 cargar resultados globales
+  /*useEffect(() => {
     const fetchResultados = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'resultados'));
@@ -58,86 +84,85 @@ const Cruces = () => {
     };
     fetchResultados();
   }, []);
-
-  const obtenerEquiposCategoria = async (categoria) => {
-  const q = query(collection(db, 'equipos'), where('categoria', '==', categoria));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-
+*/
   const generarCruces = async () => {
-  if (!categoriaSel) {
-    toast.error('Seleccioná una categoría primero');
-    return;
-  }
-
-  const equiposCat = await obtenerEquiposCategoria(categoriaSel);
-console.log("Equipos de la categoría:", equiposCat);
-
-  if (equiposCat.length < 2) {
-    toast.info('No hay suficientes equipos en la categoría seleccionada');
-    return;
-  }
-
-  const crucesArr = [];
-  for (let i = 0; i < equiposCat.length; i++) {
-    for (let j = i + 1; j < equiposCat.length; j++) {
-      console.log("Cruce a guardar:", crucesArr);
-
-      crucesArr.push({
-        equipoA: equiposCat[i].nombre,
-        equipoB: equiposCat[j].nombre,
-        categoria: categoriaSel
-      });
+    if (!categoriaSel || !faseSel) {
+      toast.error('Seleccioná categoría y fase primero'),{
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'dark',
+      }
+      return;
     }
-  }
 
-  // Guardar en Firestore
-  const ref = collection(db, 'crucesGenerales');
-  console.log("Cruce a guardar:", crucesArr);
+    if (equipos.length < 2) {
+      toast.info('No hay suficientes equipos en la categoría y fase seleccionada');
+      return;
+    }
 
-  await Promise.all(crucesArr.map(c => addDoc(ref, c)));
+    const crucesArr = [];
+    for (let i = 0; i < equipos.length; i++) {
+      for (let j = i + 1; j < equipos.length; j++) {
+        crucesArr.push({
+          equipoA: equipos[i].nombre,
+          equipoB: equipos[j].nombre,
+          categoria: categoriaSel,
+          fase: faseSel
+        });
+      }
+    }
 
-  // 🔥 Vuelve a consultar Firestore y actualiza el estado
-  const q = query(collection(db, 'crucesGenerales'), where('categoria', '==', categoriaSel));
-  const snapshot = await getDocs(q);
-  const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  setCruces(crucesData);
+    const ref = collection(db, 'crucesGenerales');
+    await Promise.all(crucesArr.map(c => addDoc(ref, c)));
 
-  toast.success('Cruces generados correctamente', {
-    theme: 'colored',
-    transition: Bounce,
-    style: { backgroundColor: '#800080', color: '#fff' }
-  });
-  
-};
+    const q = query(
+      collection(db, 'crucesGenerales'),
+      where('categoria', '==', categoriaSel),
+      where('fase', '==', faseSel)
+    );
+    const snapshot = await getDocs(q);
+    const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setCruces(crucesData);
 
+    toast.success('Cruces generados correctamente', {
+      theme: 'colored',
+      transition: Bounce,
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+  };
 
   const handleResultado = async (local, visitante, ganador) => {
     setResultados(prev => {
       const indexExistente = prev.findIndex(
-        r => (r.equipoA === local && r.equipoB === visitante) || (r.equipoA === visitante && r.equipoB === local)
+        r =>
+          (r.equipoA === local && r.equipoB === visitante) ||
+          (r.equipoA === visitante && r.equipoB === local)
       );
       if (indexExistente !== -1) {
         const nuevos = [...prev];
-        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador };
+        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador, fase: faseSel };
         return nuevos;
       }
-      return [...prev, { equipoA: local, equipoB: visitante, ganador }];
+      return [...prev, { equipoA: local, equipoB: visitante, ganador, fase: faseSel }];
     });
 
-    const idResultado = `${local}_vs_${visitante}`;
+    const idResultado = `${local}_vs_${visitante}_${faseSel}`;
     await setDoc(doc(db, 'resultados', idResultado), {
       equipoA: local,
       equipoB: visitante,
       ganador,
+      fase: faseSel
     });
   };
 
   const eliminarColecciones = async () => {
     try {
-      const colecciones = ['crucesGenerales', 'resultados', 'equipos', 'jugadores'];
+      const colecciones = ['crucesGenerales', 'resultados'];
       for (const nombre of colecciones) {
         const snapshot = await getDocs(collection(db, nombre));
         const promesas = snapshot.docs.map(d => deleteDoc(doc(db, nombre, d.id)));
@@ -161,7 +186,8 @@ console.log("Equipos de la categoría:", equiposCat);
       <div className="body">
         <div className="contenedor">
           <div className="contenedor-div">
-            <button className="boton" onClick={generarCruces}>Generar Cruces</button>
+            <button className="boton" onClick={generarCruces} disabled={equipos.length === 0}>Generar Cruces</button>
+
             <select className="select-list" value={categoriaSel} onChange={(e) => setCategoriaSel(e.target.value)}>
               <option value="">Seleccionar categoría</option>
               <option value="U14">U14</option>
@@ -169,6 +195,14 @@ console.log("Equipos de la categoría:", equiposCat);
               <option value="U18">U18</option>
               <option value="Senior">Senior</option>
             </select>
+
+            <select className="select-list" value={faseSel} onChange={(e) => setFaseSel(e.target.value)}>
+              <option value="">Seleccionar fase</option>
+              <option value="fase_de_grupos">Fase de Grupos</option>
+              <option value="semifinales">Cuartos de Final</option>
+              <option value="finales">Semifinal</option>
+            </select>
+
             <button className="boton" onClick={eliminarColecciones}>Limpiar cruces y ganadores</button>
           </div>
 
@@ -178,7 +212,7 @@ console.log("Equipos de la categoría:", equiposCat);
             ) : (
               cruces.map((cruce, index) => (
                 <li className="card" key={index}>
-                  <p>{cruce.equipoA} vs {cruce.equipoB}</p>
+                  <p>{cruce.equipoA} vs {cruce.equipoB} ({cruce.fase})</p>
                   <button onClick={() => handleResultado(cruce.equipoA, cruce.equipoB, cruce.equipoA)}>
                     Ganador: {cruce.equipoA}
                   </button>
@@ -198,7 +232,7 @@ console.log("Equipos de la categoría:", equiposCat);
           ) : (
             resultados.map((r, index) => (
               <h3 key={index}>
-                {r.equipoA} vs {r.equipoB} - Ganador: <strong>{r.ganador}</strong>
+                {r.equipoA} vs {r.equipoB} - Ganador: <strong>{r.ganador}</strong> ({r.fase})
               </h3>
             ))
           )}
