@@ -9,9 +9,11 @@ import 'react-toastify/dist/ReactToastify.css';
 const Cruces = () => {
   const [categoriaSel, setCategoriaSel] = useState('');
   const [faseSel, setFaseSel] = useState('');
-  const [equipos, setEquipos] = useState([]); // 👈 ahora depende de fase/categoria
+  const [equipos, setEquipos] = useState([]);
   const [cruces, setCruces] = useState([]);
   const [resultados, setResultados] = useState([]);
+  const [marcadores, setMarcadores] = useState({});
+  const [tablaPosiciones, setTablaPosiciones] = useState([]);
 
   // 👉 obtener equipos de la ruta fase/categoria/equipos
   const obtenerEquiposCategoria = async (fase, categoria) => {
@@ -21,85 +23,66 @@ const Cruces = () => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   };
 
+  // 👉 limpiar todo cuando cambia fase o categoría
+  useEffect(() => {
+    setEquipos([]);
+    setCruces([]);
+    setResultados([]);
+    setTablaPosiciones([]);
+  }, [faseSel, categoriaSel]);
+
   // 👉 cargar equipos cuando se cambia fase o categoría
   useEffect(() => {
     const fetchEquipos = async () => {
-      if (!faseSel || !categoriaSel) {
-        setEquipos([]);
-        return;
-      }
+      if (!faseSel || !categoriaSel) return;
       try {
         const equiposCat = await obtenerEquiposCategoria(faseSel, categoriaSel);
         setEquipos(equiposCat);
       } catch (error) {
-        toast.error('Error al cargar equipos', {
-          position: 'top-right',
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: 'dark',
-        });
+        toast.error('Error al cargar equipos');
         console.error('Error al cargar equipos:', error);
       }
     };
     fetchEquipos();
   }, [faseSel, categoriaSel]);
 
-  // 👉 cargar cruces cuando se cambia fase o categoría
+  // 👉 cargar cruces y resultados filtrados
   useEffect(() => {
-    const fetchCruces = async () => {
-      if (!categoriaSel || !faseSel) {
-        setCruces([]);
-        return;
-      }
+    const fetchDatos = async () => {
+      if (!categoriaSel || !faseSel) return;
+
       try {
-        const q = query(
+        // resultados filtrados
+        const qRes = query(
+          collection(db, 'resultados'),
+          where('categoria', '==', categoriaSel),
+          where('fase', '==', faseSel)
+        );
+        const snapshotRes = await getDocs(qRes);
+        const resultadosData = snapshotRes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setResultados(resultadosData);
+
+        // cruces filtrados
+        const qCru = query(
           collection(db, 'crucesGenerales'),
           where('categoria', '==', categoriaSel),
           where('fase', '==', faseSel)
         );
-        const snapshot = await getDocs(q);
-        const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const snapshotCru = await getDocs(qCru);
+        const crucesData = snapshotCru.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setCruces(crucesData);
       } catch (error) {
-        console.error('Error al obtener cruces:', error);
+        console.error('Error al obtener datos:', error);
       }
     };
-    fetchCruces();
+    fetchDatos();
   }, [categoriaSel, faseSel]);
 
-  // 👉 cargar resultados globales
-  /*useEffect(() => {
-    const fetchResultados = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'resultados'));
-        const resultadosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setResultados(resultadosData);
-      } catch (error) {
-        console.error('Error al obtener resultados:', error);
-      }
-    };
-    fetchResultados();
-  }, []);
-*/
   const generarCruces = async () => {
     if (!categoriaSel || !faseSel) {
-      toast.error('Seleccioná categoría y fase primero'),{
-        position: 'top-right',
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: 'dark',
-      }
+      toast.error('Seleccioná categoría y fase primero');
       return;
     }
-
     if (equipos.length < 2) {
       toast.info('No hay suficientes equipos en la categoría y fase seleccionada');
       return;
@@ -120,6 +103,7 @@ const Cruces = () => {
     const ref = collection(db, 'crucesGenerales');
     await Promise.all(crucesArr.map(c => addDoc(ref, c)));
 
+    // recargar cruces filtrados
     const q = query(
       collection(db, 'crucesGenerales'),
       where('categoria', '==', categoriaSel),
@@ -136,7 +120,7 @@ const Cruces = () => {
     });
   };
 
-  const handleResultado = async (local, visitante, ganador) => {
+  const handleResultado = async (local, visitante, ganador, marcador) => {
     setResultados(prev => {
       const indexExistente = prev.findIndex(
         r =>
@@ -145,18 +129,20 @@ const Cruces = () => {
       );
       if (indexExistente !== -1) {
         const nuevos = [...prev];
-        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador, fase: faseSel };
+        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador, fase: faseSel, categoria: categoriaSel, marcador };
         return nuevos;
       }
-      return [...prev, { equipoA: local, equipoB: visitante, ganador, fase: faseSel }];
+      return [...prev, { equipoA: local, equipoB: visitante, ganador, fase: faseSel, categoria: categoriaSel, marcador }];
     });
 
-    const idResultado = `${local}_vs_${visitante}_${faseSel}`;
+    const idResultado = `${local}_vs_${visitante}_${faseSel}_${categoriaSel}`;
     await setDoc(doc(db, 'resultados', idResultado), {
       equipoA: local,
       equipoB: visitante,
       ganador,
-      fase: faseSel
+      marcador,
+      fase: faseSel,
+      categoria: categoriaSel
     });
   };
 
@@ -180,6 +166,68 @@ const Cruces = () => {
     }
   };
 
+  const handleMarcadorChange = (id, value) => {
+    const regex = /^\d{0,2}-?\d{0,2}$/;
+    if (regex.test(value)) {
+      setMarcadores(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  };
+
+  const generarTablaPosiciones = () => {
+    if (resultados.length === 0) return;
+
+    const equiposStats = {};
+    equipos.forEach(e => {
+      equiposStats[e.nombre] = {
+        nombre: e.nombre,
+        ganados: 0,
+        perdidos: 0,
+        puntosAFavor: 0,
+        puntosEnContra: 0,
+        diferencia: 0
+      };
+    });
+
+    resultados.forEach(r => {
+      if (!r.marcador) return;
+      const [golesA, golesB] = r.marcador.split('-').map(n => parseInt(n, 10));
+      const eqA = equiposStats[r.equipoA];
+      const eqB = equiposStats[r.equipoB];
+
+      if (!eqA || !eqB) return;
+
+      eqA.puntosAFavor += golesA;
+      eqA.puntosEnContra += golesB;
+      eqB.puntosAFavor += golesB;
+      eqB.puntosEnContra += golesA;
+
+      eqA.diferencia = eqA.puntosAFavor - eqA.puntosEnContra;
+      eqB.diferencia = eqB.puntosAFavor - eqB.puntosEnContra;
+
+      if (r.ganador === r.equipoA) {
+        eqA.ganados += 1;
+        eqB.perdidos += 1;
+      } else if (r.ganador === r.equipoB) {
+        eqB.ganados += 1;
+        eqA.perdidos += 1;
+      }
+    });
+
+    const dosOMas = Object.values(equiposStats).filter(e => e.ganados >= 2);
+    const uno = Object.values(equiposStats).filter(e => e.ganados === 1);
+    const cero = Object.values(equiposStats).filter(e => e.ganados === 0);
+
+    dosOMas.sort((a, b) => b.diferencia - a.diferencia);
+    uno.sort((a, b) => b.diferencia - a.diferencia);
+    cero.sort((a, b) => b.diferencia - a.diferencia);
+
+    const tablaFinal = [...dosOMas, ...uno, ...cero];
+    setTablaPosiciones(tablaFinal);
+  };
+
   return (
     <>
       <Navbar />
@@ -199,8 +247,8 @@ const Cruces = () => {
             <select className="select-list" value={faseSel} onChange={(e) => setFaseSel(e.target.value)}>
               <option value="">Seleccionar fase</option>
               <option value="fase_de_grupos">Fase de Grupos</option>
-              <option value="semifinales">Cuartos de Final</option>
-              <option value="finales">Semifinal</option>
+              <option value="semifinales">Semifinales</option>
+              <option value="finales">Finales</option>
             </select>
 
             <button className="boton" onClick={eliminarColecciones}>Limpiar cruces y ganadores</button>
@@ -210,13 +258,37 @@ const Cruces = () => {
             {cruces.length === 0 ? (
               <li>No hay cruces generados</li>
             ) : (
-              cruces.map((cruce, index) => (
-                <li className="card" key={index}>
-                  <p>{cruce.equipoA} vs {cruce.equipoB} ({cruce.fase})</p>
-                  <button onClick={() => handleResultado(cruce.equipoA, cruce.equipoB, cruce.equipoA)}>
+              cruces.map((cruce) => (
+                <li className="card" key={cruce.id}>
+                  <p>{cruce.equipoA} vs {cruce.equipoB}</p>
+                  <input
+                    type="text"
+                    placeholder="Ej: 21-10"
+                    value={marcadores[cruce.id] || ""}
+                    onChange={(e) => handleMarcadorChange(cruce.id, e.target.value)}
+                  />
+                  <button
+                    onClick={() =>
+                      handleResultado(
+                        cruce.equipoA,
+                        cruce.equipoB,
+                        cruce.equipoA,
+                        marcadores[cruce.id] || ""
+                      )
+                    }
+                  >
                     Ganador: {cruce.equipoA}
                   </button>
-                  <button onClick={() => handleResultado(cruce.equipoA, cruce.equipoB, cruce.equipoB)}>
+                  <button
+                    onClick={() =>
+                      handleResultado(
+                        cruce.equipoA,
+                        cruce.equipoB,
+                        cruce.equipoB,
+                        marcadores[cruce.id] || ""
+                      )
+                    }
+                  >
                     Ganador: {cruce.equipoB}
                   </button>
                 </li>
@@ -232,10 +304,25 @@ const Cruces = () => {
           ) : (
             resultados.map((r, index) => (
               <h3 key={index}>
-                {r.equipoA} vs {r.equipoB} - Ganador: <strong>{r.ganador}</strong> ({r.fase})
+                {r.equipoA} vs {r.equipoB} - 
+                Ganador: <strong>{r.ganador}</strong> - 
+                Puntos: <strong>{r.marcador}</strong>
               </h3>
             ))
           )}
+        </div>
+
+        <div className="tabla-posiciones">
+          <h2>Tabla de posiciones de {faseSel}</h2>
+          <button className='boton' onClick={generarTablaPosiciones}>Crear tabla</button>
+          <ul>
+            {tablaPosiciones.map((e, i) => (
+              <li key={i} className="grillali">
+                {i + 1}. {e.nombre} - Ganados: {e.ganados}, Perdidos: {e.perdidos}, 
+                Puntos a favor: {e.puntosAFavor}, Puntos en contra: {e.puntosEnContra}, diferencia: {e.diferencia}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
       <ToastContainer />

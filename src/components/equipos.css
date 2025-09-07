@@ -19,7 +19,7 @@
 .contenedorEquipos{
     overflow: hidden;
     display: flex;
-    height: 500px;
+    height: auto;
     width: 800px;
     flex-direction: row;
     justify-content: space-evenly;

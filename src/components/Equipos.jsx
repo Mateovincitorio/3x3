@@ -13,12 +13,8 @@ const Equipos = () => {
   const [editando, setEditando] = useState(null); // id del equipo en edición
   const [formData, setFormData] = useState({
     nombre: "",
-    jugador1: "",
-    jugador2: "",
-    jugador3: "",
-    jugador4: "",
     categoria: "",
-    zona: ""
+    fase: "",
   });
 
   useEffect(() => {
@@ -98,16 +94,18 @@ const Equipos = () => {
                 {editando === equipo.id ? (
                   <form onSubmit={handleUpdate}>
                     <input type="text" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} />
-                    <input type="text" value={formData.jugador1} onChange={(e) => setFormData({ ...formData, jugador1: e.target.value })} />
-                    <input type="text" value={formData.jugador2} onChange={(e) => setFormData({ ...formData, jugador2: e.target.value })} />
-                    <input type="text" value={formData.jugador3} onChange={(e) => setFormData({ ...formData, jugador3: e.target.value })} />
-                    <input type="text" value={formData.jugador4} onChange={(e) => setFormData({ ...formData, jugador4: e.target.value })} />
                     <select className='select-list' name="categoria" id="" value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}>
                       <option value="">Seleccionar categoría</option>
                       <option value="U14">U14</option>
                       <option value="U16">U16</option>
                       <option value="U18">U18</option>
                       <option value="Senior">Senior</option>
+                    </select>
+                    <select className='select-list' name="fase" id="" value={formData.fase} onChange={(e) => setFormData({ ...formData, fase: e.target.value })}>
+                      <option value="">Seleccionar fase</option>
+                      <option value="fase_de_grupos">Fase de Grupos</option>
+              <option value="semifinales">Semifinales</option>
+              <option value="finales">Finales</option>
                     </select>
                     <button className="boton-editar" type="submit">Guardar</button>
                     <button className="boton-editar" type="button" onClick={() => setEditando(null)}>Cancelar</button>

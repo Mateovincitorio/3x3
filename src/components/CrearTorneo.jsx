@@ -156,38 +156,6 @@ const handleSubmit = async (e) => {
               placeholder="Nombre del equipo"
               required
             />
-            <input
-              type="text"
-              name="jugador1"
-              value={equipo.jugador1}
-              onChange={handleChange}
-              placeholder="Nombre del jugador 1"
-              required
-            />
-            <input
-              type="text"
-              name="jugador2"
-              value={equipo.jugador2}
-              onChange={handleChange}
-              placeholder="Nombre del jugador 2"
-              required
-            />
-            <input
-              type="text"
-              name="jugador3"
-              value={equipo.jugador3}
-              onChange={handleChange}
-              placeholder="Nombre del jugador 3"
-              required
-            />
-            <input
-              type="text"
-              name="jugador4"
-              value={equipo.jugador4}
-              onChange={handleChange}
-              placeholder="Nombre del jugador 4"
-              required
-            />
 
             <select
               name="categoria"
@@ -200,7 +168,7 @@ const handleSubmit = async (e) => {
               <option value="U14">U14</option>
               <option value="U16">U16</option>
               <option value="U18">U18</option>
-              <option value="senior">Senior</option>
+              <option value="Senior">Senior</option>
             </select>
           <select
             name="fase"
