@@ -17,6 +17,7 @@
 }
 
 .contenedorEquipos{
+  
     overflow: hidden;
     display: flex;
     height: auto;
