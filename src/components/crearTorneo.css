@@ -31,7 +31,7 @@
   border-radius: 20px;
   position: relative;
   left: 415px;
-  top: -450px;
+  top: -650px;
   margin-top: -40px;
 }
 
@@ -81,8 +81,6 @@ input::placeholder {
   transform: scale(1.05);
 }
 
-
-
 input[type="date"]::-webkit-datetime-edit {
   color: #9CA3AF;
 }
@@ -93,8 +91,8 @@ input[type="time"]::-webkit-datetime-edit {
 .añadirh1 {
  overflow: hidden;
 position: relative;
-top: -260px;
-left: 75px;
+top: -350px;
+left: 55px;
 }
 
 .select-list{
@@ -111,4 +109,57 @@ left: 75px;
   border-color: #8B5CF6;
   outline: none;
   box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+}
+
+@media (max-width: 900px) {
+  .formulario {
+    width: 95vw;
+    left: 0;
+    top: 0;
+    margin: 0 auto;
+    position: static;
+    padding: 10px 0;
+  }
+  .añadirh1 {
+    left: 0;
+    top: 0;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    position: static;
+  }
+  .contenedor {
+    height: auto;
+    margin-top: 20px;
+  }
+}
+
+
+/* Responsive */
+@media (max-width: 900px) {
+    .formulario {
+        max-width: 90%;
+        padding: 20px;
+    }
+    .añadirh1 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 500px) {
+    .formulario {
+        max-width: 95%;
+        padding: 15px;
+        border-radius: 12px;
+    }
+    form {
+        gap: 12px;
+    }
+    .crearEquipo {
+        padding: 10px;
+        font-size: 0.95rem;
+    }
+    .añadirh1 {
+        font-size: 1.2rem;
+    }
 }

@@ -1,0 +1,102 @@
+/* Contenedor general */
+.date-picker-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 5px;
+  position: relative;
+}
+
+
+/* Input del DatePicker */
+.date-input {
+  width: 220px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  color: #000;
+  background-color: #fff;
+  text-align: center;
+  cursor: pointer;
+}
+
+
+/* Calendario emergente */
+.react-datepicker {
+  padding: 15px;
+  font-size: 14px;
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 9999;
+  min-width: 250px;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  position: absolute !important;
+}
+
+
+/* Cabecera: mes y año centrados */
+.react-datepicker__header {
+  position: relative; /* hace que los botones absolutos se posicionen respecto al header */
+  display: flex;
+  justify-content: center; /* mes y año centrados */
+  align-items: center;
+  padding: 5px 0;
+  gap: 10px;
+}
+
+.react-datepicker__current-month {
+  text-align: center;
+  font-weight: bold;
+  flex: 1;
+  color: #000;
+}
+
+/* Botones de navegación a los lados */
+.react-datepicker__navigation {
+  position: absolute; /* imprescindible */
+
+  top: 20px;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  border: none;
+  background-color: #8B5CF6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.react-datepicker__navigation--previous {
+  left: -4px !important; /* ajustar distancia izquierda */
+}
+
+.react-datepicker__navigation--next {
+  right: -5px !important; /* ajustar distancia derecha */
+}
+
+/* Día seleccionado */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #8B5CF6;
+  color: #fff;
+  border-radius: 50%;
+}
+
+
+
+/* Ajuste para mobile */
+@media (max-width: 500px) {
+  .date-input {
+    width: 95%;
+    font-size: 14px;
+  }
+  .react-datepicker {
+    width: 95%;
+    font-size: 14px;
+  }
+}

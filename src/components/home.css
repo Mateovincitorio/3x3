@@ -47,7 +47,7 @@ html, body {
 
 .Link{
   text-decoration: none;
-  color: inherit; /* Hereda el color del liNavbar */
+  color: inherit;
 }
 
 .liNavbar:hover {
@@ -57,7 +57,7 @@ html, body {
 
 /* Para evitar que el contenido quede debajo del navbar */
 main {
-  margin-top: 80px; /* Ajustá según el alto del navbar */
+  margin-top: 80px;
   padding: 2rem;
 }
 
@@ -122,7 +122,7 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem; /* espacio entre cartas si agregas más */
+  gap: 2rem;
   margin-top: 50px;
 }
 
@@ -169,4 +169,57 @@ main {
 .card .link:hover {
   background-color: #ffb347;
   transform: scale(1.05);
+}
+
+@media (max-width: 900px) {
+  .cards {
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-top: 30px;
+  }
+  .card {
+    width: 95vw;
+    min-width: 0;
+    padding: 1.2rem;
+  }
+  .torneo {
+    left: 0;
+    top: 60px;
+    width: 100vw;
+    font-size: 2rem;
+    position: static;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0.5rem 0.5rem;
+  }
+  .navbar ul {
+    gap: 1rem;
+    margin-left: 10px;
+    left: 0;
+  }
+  .home {
+    flex-direction: column;
+    padding: 0;
+    min-height: 100vh;
+  }
+  .torneo {
+    font-size: 1.2rem;
+    left: 0;
+    top: 30px;
+    margin-bottom: 10px;
+    position: static;
+  }
+  .cards {
+    margin-top: 10px;
+    gap: 0.8rem;
+  }
+  .card {
+    width: 98vw;
+    padding: 0.7rem;
+    font-size: 15px;
+  }
 }
