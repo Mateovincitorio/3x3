@@ -7,6 +7,8 @@ import { db } from '../firebarseConfig.js';
 import { collection, addDoc, getDocs, where, query } from 'firebase/firestore';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Cruces from './Cruces.jsx';
+import './cruces.css';
 
 const CrearTorneo = () => {
   const [equipo, setEquipo] = useState({
@@ -232,6 +234,7 @@ const CrearTorneo = () => {
             <button className="crearEquipo" type="button" onClick={() => window.location.href = '/'}>Volver a Home</button>
           </form>
         </div>
+      <Cruces />
       </div>
       <ToastContainer />
     </>

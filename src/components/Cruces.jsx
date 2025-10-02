@@ -20,6 +20,7 @@ const Cruces = () => {
   const [torneoSel, setTorneoSel] = useState("");
   const [zonaSel, setZonaSel] = useState('');
   const [fechasCruces, setFechasCruces] = useState({}); // { idCruce: Date }
+  const [canchasCruces, setCanchasCruces] = useState({}); // { idCruce: "cancha1" }
 
   // Obtener equipos
   const obtenerEquiposCategoria = async (torneo, fase, categoria, zona) => {
@@ -85,10 +86,13 @@ const Cruces = () => {
 
         // Inicializar fechas
         const fechas = {};
+        const canchas = {};
         crucesData.forEach(c => {
           fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
+          canchas[c.id] = c.cancha || ""; // Asignar cancha por defecto
         });
         setFechasCruces(fechas);
+        setCanchasCruces(canchas);
 
       } catch (error) {
         console.error("Error al cargar cruces:", error);
@@ -120,62 +124,67 @@ const Cruces = () => {
   }, [categoriaSel, faseSel, torneoSel, zonaSel]);
 
   // Generar cruces
-  const generarCruces = async () => {
-    if (!torneoSel || !categoriaSel || !faseSel || !zonaSel) {
-      toast.error('Seleccioná torneo, categoría, fase y zona primero');
-      return;
-    }
-    if (equipos.length < 2) {
-      toast.info('No hay suficientes equipos para generar cruces');
-      return;
-    }
+const generarCruces = async () => {
+  if (!torneoSel || !categoriaSel || !faseSel || !zonaSel) {
+    toast.error('Seleccioná torneo, categoría, fase y zona primero');
+    return;
+  }
+  if (equipos.length < 2) {
+    toast.info('No hay suficientes equipos para generar cruces');
+    return;
+  }
 
-    try {
-      const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
-      if (!torneoSeleccionado) throw new Error('Torneo no encontrado');
+  try {
+    const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
+    if (!torneoSeleccionado) throw new Error('Torneo no encontrado');
 
-      const refCruces = collection(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`);
+    const refCruces = collection(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`);
 
-      // Generar combinaciones de equipos
-      const promesas = [];
-      for (let i = 0; i < equipos.length; i++) {
-        for (let j = i + 1; j < equipos.length; j++) {
-          const cruce = {
-            equipoA: equipos[i].nombre,
-            equipoB: equipos[j].nombre,
-            categoria: categoriaSel,
-            fase: faseSel,
-            torneoId: torneoSel,
-            torneoNombre: torneoSeleccionado.nombre || torneoSeleccionado.id,
-            zona: zonaSel,
-            fechaHora: Timestamp.fromDate(new Date()) // fecha inicial
-          };
-          promesas.push(addDoc(refCruces, cruce));
-        }
+    // Generar combinaciones de equipos
+    const promesas = [];
+    let fechaBase = new Date(); // Fecha inicial
+    for (let i = 0; i < equipos.length; i++) {
+      for (let j = i + 1; j < equipos.length; j++) {
+        // Asignar fecha escalonada, +30 minutos por cada cruce
+        const fechaCruce = new Date(fechaBase.getTime() + promesas.length * 30 * 60 * 1000);
+
+        const cruce = {
+          equipoA: equipos[i].nombre,
+          equipoB: equipos[j].nombre,
+          categoria: categoriaSel,
+          fase: faseSel,
+          torneoId: torneoSel,
+          torneoNombre: torneoSeleccionado.nombre || torneoSeleccionado.id,
+          zona: zonaSel,
+          fechaHora: Timestamp.fromDate(fechaCruce),
+          cancha: "", // Cancha por defecto
+        };
+        promesas.push(addDoc(refCruces, cruce));
       }
-      await Promise.all(promesas);
-
-      // Recargar cruces
-      const snapshot = await getDocs(refCruces);
-      const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCruces(crucesData);
-
-      // Inicializar fechas
-      const fechas = {};
-      crucesData.forEach(c => fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date());
-      setFechasCruces(fechas);
-
-      toast.success('Cruces generados correctamente', {
-        theme: 'colored',
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
-
-    } catch (error) {
-      console.error('Error al generar cruces:', error);
-      toast.error('Error al generar cruces');
     }
-  };
+    await Promise.all(promesas);
+
+    // Recargar cruces
+    const snapshot = await getDocs(refCruces);
+    const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setCruces(crucesData);
+
+    // Inicializar fechas
+    const fechas = {};
+    crucesData.forEach(c => fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date());
+    setFechasCruces(fechas);
+
+    toast.success('Cruces generados correctamente', {
+      theme: 'colored',
+      transition: Bounce,
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+
+  } catch (error) {
+    console.error('Error al generar cruces:', error);
+    toast.error('Error al generar cruces');
+  }
+};
 
   // Actualizar fecha de un cruce
   const handleFechaChange = async (cruceId, date) => {
@@ -183,6 +192,14 @@ const Cruces = () => {
     const refCruce = doc(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`, cruceId);
     await setDoc(refCruce, { fechaHora: Timestamp.fromDate(date) }, { merge: true });
   };
+
+  const handleCanchaChange = async (cruceId, value) => {
+  setCanchasCruces(prev => ({ ...prev, [cruceId]: value }));
+  
+  const refCruce = doc(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`, cruceId);
+  await setDoc(refCruce, { cancha: value }, { merge: true });
+};
+
 
   // Eliminar colecciones globales (opcional)
 const eliminarColecciones = async () => {
@@ -314,7 +331,7 @@ const eliminarColecciones = async () => {
     <>
     <div className="cruces-page">
       <Navbar />
-      <div className="body">
+      <div className="body-cruces">
         <div className="contenedor">
           <div className="contenedor-div">
             <button className="boton" onClick={generarCruces} disabled={equipos.length < 2}>Generar Cruces</button>
@@ -363,12 +380,48 @@ const eliminarColecciones = async () => {
                     value={fechasCruces[c.id]} 
                     onChange={date => handleFechaChange(c.id, date)} 
                   />
+                  <select
+  value={canchasCruces[c.id] || ""}
+  className='select-list'
+  onChange={e => handleCanchaChange(c.id, e.target.value)}
+>
+  <option value="">Seleccionar cancha</option>
+  <option value="cancha1">Cancha 1</option>
+  <option value="cancha2">Cancha 2</option>
+  <option value="cancha3">Cancha 3</option>
+  <option value="cancha4">Cancha 4</option>
+  <option value="cancha5">Cancha 5</option>
+  <option value="cancha6">Cancha 6</option>
+  <option value="cancha7">Cancha 7</option>
+  <option value="cancha8">Cancha 8</option>
+</select>
+
                 </li>
               ))
             )}
           </ul>
         </div>
-
+        <div className="resultados">
+          <h2>Partidos jugados y por jugar</h2>
+          {cruces.length === 0 ? (
+            <p>No hay cruces generados</p>
+          ) : (
+            <ul>
+              {[...cruces]
+              .sort((a, b) => {
+      const fechaA = fechasCruces[a.id] ? fechasCruces[a.id].getTime() : Infinity;
+      const fechaB = fechasCruces[b.id] ? fechasCruces[b.id].getTime() : Infinity;
+      return fechaA - fechaB; // primero el más temprano
+              })
+              .map(c => (
+                <li className="li-partidos" key={c.id}>
+                  {c.equipoA} vs {c.equipoB} - 
+                  Fecha: {fechasCruces[c.id] ? fechasCruces[c.id].toLocaleString() : "Sin fecha"} - Cancha: {canchasCruces[c.id] || "No asignada"} 
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className="resultados">
           <h2>Resultados</h2>
           {resultados.length === 0 ? (
