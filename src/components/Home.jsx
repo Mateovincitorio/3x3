@@ -20,11 +20,6 @@ const Home = () => {
             <Link to="/crear" className="link">Ir a Agregar equipos</Link>
         </div>
         <div className="card">
-          <h2>Cruces</h2>
-          <p>Genera y visualiza los cruces de los equipos.</p>
-          <Link to="/cruces" className="link">Ir a Cruces</Link>
-        </div>
-        <div className="card">
           <h2>Equipos</h2>
           <p>Visualiza y gestiona los equipos participantes.</p>
           <Link to="/equipos" className="link">Ir a Equipos</Link>

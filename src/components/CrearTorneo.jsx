@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import './crearTorneo.css';
 import './cruces.css';
 import { db } from '../firebarseConfig.js';
-import { collection, addDoc, getDocs, where, query } from 'firebase/firestore';
+import { collection, addDoc, getDocs, where, query, setDoc } from 'firebase/firestore';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Cruces from './Cruces.jsx';
@@ -25,6 +25,9 @@ const CrearTorneo = () => {
 
   const [torneos, setTorneos] = useState([]);
   const [nombreTorneo, setNombreTorneo] = useState('');
+  const [fechaInicioTorneo, setFechaInicioTorneo] = useState('');
+  const [fechaFinTorneo, setFechaFinTorneo] = useState('');
+  const [canchasTorneo, setCanchasTorneo] = useState(0);
 
   useEffect(() => {
     const fetchTorneos = async () => {
@@ -125,7 +128,6 @@ const CrearTorneo = () => {
       });
 
     } catch (error) {
-      console.error("🔥 Error en handleSubmit:", error);
       toast.error('Ocurrió un error al crear el equipo', {
         theme: "colored",
         transition: Bounce,
@@ -138,8 +140,20 @@ const CrearTorneo = () => {
   const handleCrearTorneo = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "torneos"), { nombre: nombreTorneo });
+      // Guardar torneo con fechas
+      const numCanchas = Number(canchasTorneo);
+      const torneoData = {
+        nombre: nombreTorneo,
+        fechaInicio: fechaInicioTorneo,
+        fechaFin: fechaFinTorneo,
+        canchas: numCanchas
+      };
+      await addDoc(collection(db, "torneos"), torneoData);
+      setCanchasTorneo(numCanchas);
+      // Resetear formulario
       setNombreTorneo('');
+      setFechaInicioTorneo('');
+      setFechaFinTorneo('');
       toast.success('Torneo creado correctamente', {
         theme: "colored",
         transition: Bounce,
@@ -173,6 +187,27 @@ const CrearTorneo = () => {
               onChange={e => setNombreTorneo(e.target.value)}
               placeholder="Nombre del torneo"
               required
+            />
+            <input
+              type="datetime-local"
+              value={fechaInicioTorneo}
+              onChange={e => setFechaInicioTorneo(e.target.value)}
+              placeholder="Fecha de inicio"
+              required
+            />
+            <input
+              type="datetime-local"
+              value={fechaFinTorneo}
+              onChange={e => setFechaFinTorneo(e.target.value)}
+              placeholder="Fecha de fin"
+              required
+            />
+            <input 
+              type="number" 
+              name="numCanchas" 
+              value={canchasTorneo} 
+              onChange={e => setCanchasTorneo(Number(e.target.value))} 
+              placeholder='Introduce numero de canchas (maximo 8)' 
             />
             <button type="submit" className="boton">Crear Torneo</button>
           </form>
@@ -231,10 +266,9 @@ const CrearTorneo = () => {
               <option value="d">d</option>
             </select>
             <button className="crearEquipo" type="submit">Crear Equipo</button>
-            <button className="crearEquipo" type="button" onClick={() => window.location.href = '/'}>Volver a Home</button>
           </form>
         </div>
-      <Cruces />
+      <Cruces torneos={torneos} canchasTorneo={canchasTorneo} />
       </div>
       <ToastContainer />
     </>
