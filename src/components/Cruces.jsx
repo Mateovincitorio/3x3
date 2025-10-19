@@ -1,294 +1,147 @@
-
 import React, { useEffect, useState } from 'react';
 import './cruces.css';
 import './crearTorneo.css';
 import Navbar from './Navbar';
-import { collection, getDocs, addDoc, doc, setDoc, query, where, Timestamp, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, setDoc, Timestamp, deleteDoc, collectionGroup} from 'firebase/firestore';
 import { db } from '../firebarseConfig.js';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DateTimePicker from './DateTimePicker';
-  
-const Cruces = ({ torneos: torneosProp, canchasTorneo }) => {
+
+const Cruces = ({ torneos: torneosProp, canchasTorneo, numZonas }) => {
+  const [torneos, setTorneos] = useState([]);
+  const [torneoSel, setTorneoSel] = useState('');
   const [categoriaSel, setCategoriaSel] = useState('');
   const [faseSel, setFaseSel] = useState('');
+  const [zonaSel, setZonaSel] = useState('');
   const [equipos, setEquipos] = useState([]);
   const [cruces, setCruces] = useState([]);
   const [resultados, setResultados] = useState([]);
   const [marcadores, setMarcadores] = useState({});
   const [tablaPosiciones, setTablaPosiciones] = useState([]);
-  const [torneos, setTorneos] = useState([]);
-  const [torneoSel, setTorneoSel] = useState("");
-  const [zonaSel, setZonaSel] = useState('');
   const [fechasCruces, setFechasCruces] = useState({});
   const [canchasCruces, setCanchasCruces] = useState({});
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [intervaloMin, setIntervaloMin] = useState(15);
   const [todosCruces, setTodosCruces] = useState([]);
-  const [numCanchas, setNumCanchas] = useState(canchasTorneo); // inicializar con prop
+  const [numCanchas, setNumCanchas] = useState(canchasTorneo || 1);
 
+  // ========================
+  // GENERAR ZONAS
+  // ========================
+  const generarZonas = (num) => [...Array(num)].map((_, i) => `zona${i + 1}`);
+  const numZonasTorneoSel = torneoSel
+    ? torneos.find(t => t.id === torneoSel)?.zonas || 1
+    : 1;
+  const zonas = generarZonas(numZonasTorneoSel);
+
+// ========================
+// CARGAR RESULTADOS
+// ========================
+useEffect(() => {
+  const fetchResultados = async () => {
+    if (!torneoSel || !categoriaSel || !faseSel || !zonaSel) return;
+
+    try {
+      const resultadosSnap = await getDocs(collection(db, "resultados"));
+      const resultadosFiltrados = resultadosSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(r =>
+          r.torneoId === torneoSel &&
+          r.categoria === categoriaSel &&
+          r.fase === faseSel &&
+          r.zona === zonaSel
+        );
+      setResultados(resultadosFiltrados);
+    } catch (error) {
+      console.error("Error al cargar resultados:", error);
+      toast.error("Error al cargar resultados");
+    }
+  };
+
+  fetchResultados();
+}, [torneoSel, categoriaSel, faseSel, zonaSel]);
 
 useEffect(() => {
-  const fetchTodosCruces = async () => {
-    if (!torneoSel) return; // Si no hay torneo seleccionado, no hacemos nada
-    try {
-      const fases = ["fase_de_grupos", "semifinales", "finales"];
-      const categorias = ["U14", "U16", "U18", "Senior"];
-      const zonas = ["a", "b", "c", "d"];
-      const crucesAcumulados = [];
-
-      for (const fase of fases) {
-        for (const categoria of categorias) {
-          for (const zona of zonas) {
-            const snapshot = await getDocs(
-              collection(db, `torneos/${torneoSel}/${fase}/${categoria}/zonas/${zona}/crucesGenerales`)
-            );
-            snapshot.docs.forEach(doc => {
-              crucesAcumulados.push({ id: doc.id, ...doc.data() });
-            });
-          }
-        }
-      }
-
-      setTodosCruces(crucesAcumulados);
-
-      // Inicializar fechas y canchas
-      const fechas = {};
-      const canchas = {};
-      crucesAcumulados.forEach(c => {
-        fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
-        canchas[c.id] = c.cancha || "";
-      });
-      setFechasCruces(fechas);
-      setCanchasCruces(canchas);
-      const torneoObj = torneos.find(t => t.id === torneoSel);
-      setNumCanchas(torneoObj?.canchas || 0); // actualizar número de canchas según torneo
-
-    } catch (error) {
-      console.error("Error al traer todos los cruces:", error);
-    }
-  };
-
-  fetchTodosCruces();
-
-  // Opcional: actualizar cada vez que cambien los cruces en Firebase
-  // puedes agregar un listener en lugar de solo getDocs para real-time
-}, [torneoSel, cruces]); // <- Dependencias: actualiza cuando se cambien cruces o torneo seleccionado
+  generarTablaPosiciones();
+}, [resultados, equipos]);
 
 
-
-  // Obtener equipos
-  const obtenerEquiposCategoria = async (torneo, fase, categoria, zona) => {
-    if (!torneo || !fase || !categoria || !zona) return [];
-    const path = `torneos/${torneo}/${fase}/${categoria}/zonas/${zona}/equipos`;
-    const snapshot = await getDocs(collection(db, path));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  };
-
-  // Limpiar datos al cambiar fase/categoría/zona/torneo
+  // ========================
+  // CARGAR TORNEOS
+  // ========================
   useEffect(() => {
-    setEquipos([]);
-    setCruces([]);
-    setResultados([]);
-    setTablaPosiciones([]);
-  }, [faseSel, categoriaSel, zonaSel, torneoSel]);
-
-  // Cargar equipos
-  useEffect(() => {
-  const fetchEquipos = async () => {
-    try {
-      const equiposCat = await obtenerEquiposCategoria(torneoSel, faseSel, categoriaSel, zonaSel);
-      setEquipos(equiposCat);
-
-      if (torneoSel && faseSel && categoriaSel && zonaSel && equiposCat.length === 0) {
-        toast.info('No hay suficientes equipos para generar cruces');
-      }
-
-    } catch (error) {
-      toast.error('Error al cargar equipos');
-      console.error(error);
-    }
-  };
-  fetchEquipos();
-}, [torneoSel, faseSel, categoriaSel, zonaSel]);
-
-  // Cargar torneos
-  useEffect(() => {
-    if (torneosProp && torneosProp.length > 0) {
+    if (torneosProp?.length) {
       setTorneos(torneosProp);
     } else {
       const fetchTorneos = async () => {
         try {
-          const snapshot = await getDocs(collection(db, "torneos"));
+          const snapshot = await getDocs(collection(db, 'torneos'));
           const torneosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTorneos(torneosData);
         } catch (error) {
-          console.error("Error al traer torneos:", error);
+          console.error('Error al traer torneos:', error);
         }
       };
       fetchTorneos();
     }
   }, [torneosProp]);
 
-  // Cargar cruces
+  // ========================
+  // LIMPIAR DATOS AL CAMBIAR SELECCIONES
+  // ========================
   useEffect(() => {
-    const fetchCruces = async () => {
-      if (!categoriaSel || !faseSel || !torneoSel || !zonaSel) return;
+    setEquipos([]);
+    setCruces([]);
+    setResultados([]);
+    setTablaPosiciones([]);
+    setFechasCruces({});
+    setCanchasCruces({});
+  }, [torneoSel, categoriaSel, faseSel, zonaSel]);
 
+  // ========================
+  // CARGAR EQUIPOS
+  // ========================
+  useEffect(() => {
+    const fetchEquipos = async () => {
+      if (!torneoSel || !faseSel || !categoriaSel || !zonaSel) return;
       try {
-        const qCruces = query(
-          collection(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`),
-          where('categoria', '==', categoriaSel),
-          where('fase', '==', faseSel),
-          where('torneoId', '==', torneoSel),
-          where('zona', '==', zonaSel)
-        );
-        const snapshot = await getDocs(qCruces);
-        const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCruces(crucesData);
+        const snapshot = await getDocs(collection(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/equipos`));
+        const equiposData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEquipos(equiposData);
 
-        // Inicializar fechas y canchas
-        const fechas = {};
-        const canchas = {};
-        crucesData.forEach(c => {
-          fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
-          canchas[c.id] = c.cancha || "";
-        });
-        setFechasCruces(fechas);
-        setCanchasCruces(canchas);
-
+        if (equiposData.length < 2) {
+          toast.info('No hay suficientes equipos para generar cruces');
+        }
       } catch (error) {
-        console.error("Error al cargar cruces:", error);
+        toast.error('Error al cargar equipos');
+        console.error(error);
       }
     };
-    fetchCruces();
-  }, [categoriaSel, faseSel, torneoSel, zonaSel]);
+    fetchEquipos();
+  }, [torneoSel, faseSel, categoriaSel, zonaSel]);
 
-  // Cargar resultados
-  useEffect(() => {
-    const fetchResultados = async () => {
-      if (!categoriaSel || !faseSel || !torneoSel || !zonaSel) return;
-      try {
-        const qRes = query(
-          collection(db, 'resultados'),
-          where('categoria', '==', categoriaSel),
-          where('fase', '==', faseSel),
-          where('torneoId', '==', torneoSel),
-          where('zona', '==', zonaSel)
-        );
-        const snapshotRes = await getDocs(qRes);
-        const resultadosData = snapshotRes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setResultados(resultadosData);
-      } catch (error) {
-        console.error('Error al obtener resultados:', error);
-      }
-    };
-    fetchResultados();
-  }, [categoriaSel, faseSel, torneoSel, zonaSel]);
-
-  // Actualizar fechas de inicio/fin según torneo seleccionado
-  useEffect(() => {
-    if (!torneoSel || !torneos.length) {
-      setFechaInicio('');
-      setFechaFin('');
-      return;
-    }
-    const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
-    setFechaInicio(torneoSeleccionado?.fechaInicio || '');
-    setFechaFin(torneoSeleccionado?.fechaFin || '');
-  }, [torneoSel, torneos]);
-
-  // ==============================
-  // GENERAR CRUCES AVANZADO
-  // ==============================
-  const generarCruces = async () => {
+  // ========================
+// CARGAR CRUCES AUTOMÁTICAMENTE SEGÚN SELECCIONES
+// ========================
+useEffect(() => {
+  const fetchCrucesSeleccionados = async () => {
     if (!torneoSel || !categoriaSel || !faseSel || !zonaSel) {
-    toast.error('Seleccioná torneo, categoría, fase y zona primero');
-    return;
-  }
-
-  if (!equipos || equipos.length < 2) {
-    console.log('Equipos disponibles:', equipos.length);
-    toast.info('No hay suficientes equipos para generar cruces');
-    return;
-  }
-
-    if (!fechaInicio || !fechaFin) {
-      toast.error('Definí fecha de inicio y fin del torneo');
+      setCruces([]);
       return;
     }
 
     try {
-      const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
-      if (!torneoSeleccionado) throw new Error('Torneo no encontrado');
-
       const refCruces = collection(
         db,
         `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`
       );
-
-      // Usar fechas del torneo seleccionado
-      const fechaInicioTorneo = torneoSeleccionado.fechaInicio ? new Date(torneoSeleccionado.fechaInicio) : new Date(fechaInicio);
-      const fechaFinTorneo = torneoSeleccionado.fechaFin ? new Date(torneoSeleccionado.fechaFin) : new Date(fechaFin);
-      const canchasDisponibles = [
-        "cancha1","cancha2","cancha3","cancha4",
-        "cancha5","cancha6","cancha7","cancha8"
-      ];
-
-      const slots = [];
-      let fechaActual = new Date(fechaInicioTorneo);
-      while (fechaActual <= fechaFinTorneo) {
-        slots.push(new Date(fechaActual));
-        fechaActual = new Date(fechaActual.getTime() + intervaloMin * 60 * 1000);
-      }
-      if (slots.length === 0) throw new Error('No hay horarios disponibles en el rango elegido');
-
-      const ocupacion = {};
-      const promesas = [];
-      let slotIndex = 0;
-
-      for (let i = 0; i < equipos.length; i++) {
-        for (let j = i + 1; j < equipos.length; j++) {
-          let cruceAsignado = false;
-          while (!cruceAsignado && slotIndex < slots.length) {
-            const fechaCruce = slots[slotIndex];
-            const fechaKey = fechaCruce.toISOString();
-            if (!ocupacion[fechaKey]) ocupacion[fechaKey] = [];
-
-            const canchaLibre = canchasDisponibles.find(c => !ocupacion[fechaKey].includes(c));
-            if (canchaLibre) {
-              ocupacion[fechaKey].push(canchaLibre);
-
-              const cruce = {
-                equipoA: equipos[i].nombre,
-                equipoB: equipos[j].nombre,
-                categoria: categoriaSel,
-                fase: faseSel,
-                torneoId: torneoSel,
-                torneoNombre: torneoSeleccionado.nombre || torneoSeleccionado.id,
-                zona: zonaSel,
-                fechaHora: Timestamp.fromDate(fechaCruce),
-                cancha: canchaLibre,
-              };
-              promesas.push(addDoc(refCruces, cruce));
-              cruceAsignado = true;
-            } else slotIndex++;
-          }
-
-          if (!cruceAsignado) {
-            toast.warn('No hay suficientes horarios o canchas para todos los cruces');
-            break;
-          }
-        }
-      }
-
-      await Promise.all(promesas);
-
       const snapshot = await getDocs(refCruces);
       const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCruces(crucesData);
 
+      // Cargar fechas y canchas
       const fechas = {};
       const canchas = {};
       crucesData.forEach(c => {
@@ -297,20 +150,265 @@ useEffect(() => {
       });
       setFechasCruces(fechas);
       setCanchasCruces(canchas);
-
-      toast.success('Cruces generados sin superposición de canchas ✅', {
-        theme: 'colored',
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
-
     } catch (error) {
-      console.error('Error al generar cruces:', error);
-      toast.error('Error al generar cruces');
+      console.error('Error al cargar cruces:', error);
+      toast.error('Error al cargar cruces automáticamente');
     }
   };
 
-  // Actualizar fecha de un cruce
+  fetchCrucesSeleccionados();
+}, [torneoSel, categoriaSel, faseSel, zonaSel]);
+
+  // ========================
+  // CARGAR CRUCES DE FIRESTORE
+  // ========================
+  useEffect(() => {
+    const fetchCruces = async () => {
+      if (!torneoSel) return;
+
+      try {
+        const crucesAcumulados = [];
+        const torneoObj = torneos.find(t => t.id === torneoSel);
+        const numCanchasTorneo = torneoObj?.canchas || numCanchas;
+        const fases = ["fase_de_grupos", "semifinales", "finales"];
+        const categorias = ["U14", "U16", "U18", "Senior"];
+        const zonasReales = generarZonas(torneoObj?.zonas || 1);
+
+        for (const fase of fases) {
+          for (const categoria of categorias) {
+            for (const zona of zonasReales) {
+              const snapshot = await getDocs(
+                collection(db, `torneos/${torneoSel}/${fase}/${categoria}/zonas/${zona}/crucesGenerales`)
+              );
+              snapshot.docs.forEach(doc => crucesAcumulados.push({ id: doc.id, ...doc.data() }));
+            }
+          }
+        }
+
+        setTodosCruces(crucesAcumulados);
+
+        // Inicializar fechas y canchas
+        const fechas = {};
+        const canchas = {};
+        crucesAcumulados.forEach(c => {
+          fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
+          canchas[c.id] = c.cancha || '';
+        });
+        setFechasCruces(fechas);
+        setCanchasCruces(canchas);
+
+      } catch (error) {
+        console.error('Error al traer cruces:', error);
+      }
+    };
+
+    fetchCruces();
+  }, [torneoSel, torneos]);
+
+  // ========================
+  // GENERAR CRUCES
+  // ========================
+const generarCruces = async () => {
+  if (!torneoSel || !categoriaSel || !faseSel || !zonaSel) {
+    toast.error('Seleccioná torneo, categoría, fase y zona primero');
+    return;
+  }
+  if (equipos.length < 2) {
+    toast.info('No hay suficientes equipos para generar cruces');
+    return;
+  }
+
+  try {
+    const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
+    if (!torneoSeleccionado) throw new Error('Torneo no encontrado');
+
+    const refCruces = collection(
+      db,
+      `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`
+    );
+    // 🔹 Verificar si ya existen cruces en esta ruta
+    const crucesExistentes = await getDocs(refCruces);
+    if (!crucesExistentes.empty) {
+      toast.info("Ya hay cruces generados para esta zona. No se generarán nuevos.", {
+        theme: "colored",
+        transition: Bounce,
+        style: { backgroundColor: "#800080", color: "#fff" }
+      });
+
+      // Cargar los existentes para mostrarlos (por si no están en el estado)
+      const crucesData = crucesExistentes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCruces(crucesData);
+
+      const fechas = {};
+      const canchas = {};
+      crucesData.forEach(c => {
+        fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
+        canchas[c.id] = c.cancha || '';
+      });
+      setFechasCruces(fechas);
+      setCanchasCruces(canchas);
+
+      return; // 👈 detener la función aquí
+    }
+
+    const canchasDisponibles = Array.from({ length: numCanchas }, (_, i) => `cancha${i + 1}`);
+
+    const fechaInicioTorneo = torneoSeleccionado.fechaInicio
+      ? new Date(torneoSeleccionado.fechaInicio)
+      : new Date();
+    const fechaFinTorneo = torneoSeleccionado.fechaFin
+      ? new Date(torneoSeleccionado.fechaFin)
+      : new Date(fechaInicioTorneo.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Generar slots de tiempo
+    const slots = [];
+    let fechaActual = new Date(fechaInicioTorneo);
+    while (fechaActual <= fechaFinTorneo) {
+      slots.push(new Date(fechaActual));
+      fechaActual = new Date(fechaActual.getTime() + intervaloMin * 60 * 1000);
+    }
+    if (!slots.length) throw new Error('No hay horarios disponibles');
+
+    // Obtener todos los cruces del torneo (sin importar categoría ni zona)
+    const refCrucesGlobal = collectionGroup(db, 'crucesGenerales');
+    const snapshotExistentes = await getDocs(refCrucesGlobal);
+
+    const ocupacion = {};
+    canchasDisponibles.forEach(c => (ocupacion[c] = []));
+    snapshotExistentes.docs.forEach(doc => {
+      const c = doc.data();
+      if (c.torneoId === torneoSel && c.cancha) {
+        const fecha = c.fechaHora?.toDate ? c.fechaHora.toDate() : new Date();
+        ocupacion[c.cancha].push(fecha);
+      }
+    });
+
+    // Trackear partidos por equipo
+    const partidosPorEquipo = {};
+    equipos.forEach(e => partidosPorEquipo[e.nombre] = []);
+
+    const margenMinutos = 15;
+
+    // Generar cruces nuevos
+    const promesas = [];
+    for (let i = 0; i < equipos.length; i++) {
+      for (let j = i + 1; j < equipos.length; j++) {
+        let cruceAsignado = false;
+
+        for (let slot of slots) {
+          if (cruceAsignado) break;
+
+          for (let cancha of canchasDisponibles) {
+            const canchaOcupada = ocupacion[cancha].some(
+              f => Math.abs(f.getTime() - slot.getTime()) < margenMinutos * 60 * 1000
+            );
+            const equipoAocupado = partidosPorEquipo[equipos[i].nombre].some(
+              f => Math.abs(f.getTime() - slot.getTime()) < margenMinutos * 60 * 1000
+            );
+            const equipoBocupado = partidosPorEquipo[equipos[j].nombre].some(
+              f => Math.abs(f.getTime() - slot.getTime()) < margenMinutos * 60 * 1000
+            );
+
+            if (!canchaOcupada && !equipoAocupado && !equipoBocupado) {
+              ocupacion[cancha].push(slot);
+              partidosPorEquipo[equipos[i].nombre].push(slot);
+              partidosPorEquipo[equipos[j].nombre].push(slot);
+
+              promesas.push(
+                addDoc(refCruces, {
+                  equipoA: equipos[i].nombre,
+                  equipoB: equipos[j].nombre,
+                  categoria: categoriaSel,
+                  fase: faseSel,
+                  torneoId: torneoSel,
+                  torneoNombre: torneoSeleccionado.nombre || torneoSeleccionado.id,
+                  zona: zonaSel,
+                  fechaHora: Timestamp.fromDate(slot),
+                  cancha
+                })
+              );
+
+              cruceAsignado = true;
+              break;
+            }
+          }
+        }
+
+        if (!cruceAsignado) {
+          toast.warn(
+            `No se pudo asignar horario a ${equipos[i].nombre} vs ${equipos[j].nombre}, revisá slots y canchas`
+          );
+        }
+      }
+    }
+
+    await Promise.all(promesas);
+
+    toast.success('Cruces generados correctamente ✅', {
+      theme: 'colored',
+      transition: Bounce,
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+
+    // Recargar cruces
+    const snapshot = await getDocs(refCruces);
+    const crucesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setCruces(crucesData);
+
+    // Actualizar fechas y canchas
+    const fechas = {};
+    const canchas = {};
+    crucesData.forEach(c => {
+      fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
+      canchas[c.id] = c.cancha || '';
+    });
+    setFechasCruces(fechas);
+    setCanchasCruces(canchas);
+  } catch (error) {
+    console.error('Error al generar cruces:', error);
+    toast.error('Error al generar cruces');
+  }
+};
+
+
+
+  // ========================
+  // FUNCIONES DE RESULTADOS Y TABLA
+  // ========================
+  const handleResultado = async (local, visitante, ganador, marcador) => {
+    const idResultado = `${local}_vs_${visitante}_${faseSel}_${categoriaSel}_${zonaSel}_${torneoSel}`;
+    const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
+
+    const nuevoResultado = {
+      equipoA: local,
+      equipoB: visitante,
+      ganador,
+      marcador,
+      fase: faseSel,
+      categoria: categoriaSel,
+      torneoId: torneoSel,
+      torneoNombre: torneoSeleccionado?.nombre || "",
+      zona: zonaSel
+    };
+
+    setResultados(prev => {
+      const indexExistente = prev.findIndex(r => r.id === idResultado);
+      if (indexExistente !== -1) {
+        const nuevos = [...prev];
+        nuevos[indexExistente] = { id: idResultado, ...nuevoResultado };
+        return nuevos;
+      }
+      return [...prev, { id: idResultado, ...nuevoResultado }];
+    });
+
+    await setDoc(doc(db, 'resultados', idResultado), nuevoResultado);
+  };
+
+  const handleMarcadorChange = (id, value) => {
+    const regex = /^\d{0,2}-?\d{0,2}$/;
+    if (regex.test(value)) setMarcadores(prev => ({ ...prev, [id]: value }));
+  };
+
   const handleFechaChange = async (cruceId, date) => {
     setFechasCruces(prev => ({ ...prev, [cruceId]: date }));
     const refCruce = doc(db, `torneos/${torneoSel}/${faseSel}/${categoriaSel}/zonas/${zonaSel}/crucesGenerales`, cruceId);
@@ -323,141 +421,127 @@ useEffect(() => {
     await setDoc(refCruce, { cancha: value }, { merge: true });
   };
 
-  // Eliminar colecciones
+  const generarTablaPosiciones = () => {
+    if (!resultados.length || !equipos.length) return;
+
+    const stats = {};
+    equipos.forEach(e => stats[e.nombre] = { nombre: e.nombre, ganados: 0, perdidos: 0, partidosJugados: 0, puntosAFavor: 0, puntosEnContra: 0, diferencia: 0 });
+
+    resultados.forEach(r => {
+      if (!r.marcador) return;
+      const [gA, gB] = r.marcador.split('-').map(n => parseInt(n, 10));
+      if (isNaN(gA) || isNaN(gB)) return;
+
+      stats[r.equipoA].partidosJugados++;
+      stats[r.equipoB].partidosJugados++;
+      stats[r.equipoA].puntosAFavor += gA;
+      stats[r.equipoA].puntosEnContra += gB;
+      stats[r.equipoB].puntosAFavor += gB;
+      stats[r.equipoB].puntosEnContra += gA;
+      stats[r.equipoA].diferencia = stats[r.equipoA].puntosAFavor - stats[r.equipoA].puntosEnContra;
+      stats[r.equipoB].diferencia = stats[r.equipoB].puntosAFavor - stats[r.equipoB].puntosEnContra;
+
+      if (r.ganador === r.equipoA) stats[r.equipoA].ganados++, stats[r.equipoB].perdidos++;
+      else if (r.ganador === r.equipoB) stats[r.equipoB].ganados++, stats[r.equipoA].perdidos++;
+    });
+
+    const tabla = Object.values(stats).sort((a, b) => b.ganados - a.ganados || b.diferencia - a.diferencia || b.puntosAFavor - a.puntosAFavor);
+    setTablaPosiciones(tabla);
+  };
+
+  // ========================
+  // ELIMINAR CRUCES Y RESULTADOS
+  // ========================
   const eliminarColecciones = async () => {
-    toast.success('Eliminando cruces, espere...', {
-        theme: 'colored',
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
+    toast.success('Eliminando cruces, espere...', { theme: 'colored', transition: Bounce, style: { backgroundColor: '#800080', color: '#fff' } });
+
     try {
       const torneosSnap = await getDocs(collection(db, "torneos"));
       const torneosData = torneosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const fases = ["fase_de_grupos", "semifinales", "finales"];
       const categorias = ["U14", "U16", "U18", "Senior"];
-      const zonas = ["a", "b", "c", "d"];
 
       for (const torneo of torneosData) {
+        const zonasDelTorneo = torneo.zonas || 1;
         for (const fase of fases) {
           for (const categoria of categorias) {
-            for (const zona of zonas) {
-              const crucesRef = collection(db, `torneos/${torneo.id}/${fase}/${categoria}/zonas/${zona}/crucesGenerales`);
-              const crucesSnap = await getDocs(crucesRef);
-              const promesasCruces = crucesSnap.docs.map(d => deleteDoc(doc(crucesRef, d.id)));
-              await Promise.all(promesasCruces);
+            for (const zona of generarZonas(zonasDelTorneo)) {
+              const crucesSnap = await getDocs(collection(db, `torneos/${torneo.id}/${fase}/${categoria}/zonas/${zona}/crucesGenerales`));
+              for (const d of crucesSnap.docs) {
+                await deleteDoc(doc(db, `torneos/${torneo.id}/${fase}/${categoria}/zonas/${zona}/crucesGenerales/${d.id}`));
+              }
             }
           }
         }
       }
 
       const resultadosSnap = await getDocs(collection(db, "resultados"));
-      const promesasResultados = resultadosSnap.docs.map(d => deleteDoc(doc(db, "resultados", d.id)));
-      await Promise.all(promesasResultados);
+      for (const d of resultadosSnap.docs) {
+        await deleteDoc(doc(db, "resultados", d.id));
+      }
 
       setCruces([]);
+      setTodosCruces([]);
       setResultados([]);
-      toast.success('Colecciones eliminadas ✅', {
-        theme: 'colored',
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
+      setFechasCruces({});
+      setCanchasCruces({});
+
+      toast.success('Colecciones eliminadas ✅', { theme: 'colored', transition: Bounce, style: { backgroundColor: '#800080', color: '#fff' } });
     } catch (error) {
       console.error('Error al eliminar colecciones:', error);
+      toast.error('Error al eliminar colecciones');
     }
   };
 
-  // Registrar resultado
-  const handleResultado = async (local, visitante, ganador, marcador) => {
-    setResultados(prev => {
-      const indexExistente = prev.findIndex(
-        r => (r.equipoA === local && r.equipoB === visitante) || (r.equipoA === visitante && r.equipoB === local)
-      );
-      if (indexExistente !== -1) {
-        const nuevos = [...prev];
-        nuevos[indexExistente] = { equipoA: local, equipoB: visitante, ganador, marcador, fase: faseSel, categoria: categoriaSel, torneoId: torneoSel, zona: zonaSel };
-        return nuevos;
+  // ========================
+  // FETCH TODOS CRUCES (zonas reales)
+  // ========================
+  useEffect(() => {
+    const fetchTodosCruces = async () => {
+      if (!torneoSel) return;
+      try {
+        const fases = ["fase_de_grupos", "semifinales", "finales"];
+        const categorias = ["U14", "U16", "U18", "Senior"];
+        const torneoObj = torneos.find(t => t.id === torneoSel);
+        const zonasReales = generarZonas(torneoObj?.zonas || 1);
+        const crucesAcumulados = [];
+
+        for (const fase of fases) {
+          for (const categoria of categorias) {
+            for (const zona of zonasReales) {
+              const snapshot = await getDocs(
+                collection(db, `torneos/${torneoSel}/${fase}/${categoria}/zonas/${zona}/crucesGenerales`)
+              );
+              snapshot.docs.forEach(doc => {
+                crucesAcumulados.push({ id: doc.id, ...doc.data() });
+              });
+            }
+          }
+        }
+
+        setTodosCruces(crucesAcumulados);
+
+        const fechas = {};
+        const canchas = {};
+        crucesAcumulados.forEach(c => {
+          fechas[c.id] = c.fechaHora ? c.fechaHora.toDate() : new Date();
+          canchas[c.id] = c.cancha || "";
+        });
+        setFechasCruces(fechas);
+        setCanchasCruces(canchas);
+        setNumCanchas(torneoObj?.canchas || 1);
+
+      } catch (error) {
+        console.error("Error al traer todos los cruces:", error);
       }
-      return [...prev, { equipoA: local, equipoB: visitante, ganador, marcador, fase: faseSel, categoria: categoriaSel, torneoId: torneoSel, zona: zonaSel }];
-    });
-
-    const torneoSeleccionado = torneos.find(t => t.id === torneoSel);
-    const idResultado = `${local}_vs_${visitante}_${faseSel}_${categoriaSel}_${zonaSel}_${torneoSel}`;
-
-    await setDoc(doc(db, 'resultados', idResultado), {
-      equipoA: local,
-      equipoB: visitante,
-      ganador,
-      marcador,
-      fase: faseSel,
-      categoria: categoriaSel,
-      torneoId: torneoSel,
-      torneoNombre: torneoSeleccionado?.nombre || "",
-      zona: zonaSel
-    });
-  };
-
-  const handleMarcadorChange = (id, value) => {
-    const regex = /^\d{0,2}-?\d{0,2}$/;
-    if (regex.test(value)) setMarcadores(prev => ({ ...prev, [id]: value }));
-  };
-
-const generarTablaPosiciones = () => {
-  if (resultados.length === 0 || equipos.length === 0) return;
-
-  const equiposStats = {};
-
-  // Inicializar estadísticas de todos los equipos
-  equipos.forEach(e => {
-    equiposStats[e.nombre] = {
-      nombre: e.nombre,
-      ganados: 0,
-      perdidos: 0,
-      partidosJugados: 0,
-      puntosAFavor: 0,
-      puntosEnContra: 0,
-      diferencia: 0
     };
-  });
 
-  // Calcular estadísticas según resultados
-  resultados.forEach(r => {
-    if (!r.marcador) return;
-    const [golesA, golesB] = r.marcador.split('-').map(n => parseInt(n, 10));
-    const eqA = equiposStats[r.equipoA];
-    const eqB = equiposStats[r.equipoB];
-    if (!eqA || !eqB) return;
+    fetchTodosCruces();
+  }, [torneoSel, torneos, cruces]);
 
-    eqA.puntosAFavor += golesA;
-    eqA.puntosEnContra += golesB;
-    eqB.puntosAFavor += golesB;
-    eqB.puntosEnContra += golesA;
-
-    eqA.diferencia = eqA.puntosAFavor - eqA.puntosEnContra;
-    eqB.diferencia = eqB.puntosAFavor - eqB.puntosEnContra;
-
-    eqA.partidosJugados += 1;
-    eqB.partidosJugados += 1;
-
-    if (r.ganador === r.equipoA) {
-      eqA.ganados += 1;
-      eqB.perdidos += 1;
-    } else if (r.ganador === r.equipoB) {
-      eqB.ganados += 1;
-      eqA.perdidos += 1;
-    }
-  });
-
-  // Ordenar tabla: primero por ganados, luego por diferencia, luego por puntos a favor
-  const tablaFinal = Object.values(equiposStats).sort((a, b) => {
-    if (b.ganados !== a.ganados) return b.ganados - a.ganados;
-    if (b.diferencia !== a.diferencia) return b.diferencia - a.diferencia;
-    return b.puntosAFavor - a.puntosAFavor;
-  });
-
-  setTablaPosiciones(tablaFinal);
-};
-
-
+  // ========================
+  // RENDER
+  // ========================
   return (
     <>
       <div className="cruces-page">
@@ -485,11 +569,11 @@ const generarTablaPosiciones = () => {
               </select>
               <select value={zonaSel} className='select-list' onChange={e => setZonaSel(e.target.value)}>
                 <option value="">Zona</option>
-                <option value="a">a</option>
-                <option value="b">b</option>
-                <option value="c">c</option>
-                <option value="d">d</option>
+                {zonas.map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
               </select>
+
               <button className="boton" onClick={eliminarColecciones}>Limpiar cruces y ganadores</button>
             </div>
             <ul className="lista-cruces">
@@ -500,8 +584,8 @@ const generarTablaPosiciones = () => {
                   <li key={c.id} className="card cruce">
                     <p>{c.equipoA} <br />vs <br /> {c.equipoB}</p>
                     <p>
-          Horario: {fechasCruces[c.id] ? fechasCruces[c.id].toLocaleString() : "Sin horario"}
-        </p>
+                      Horario: {fechasCruces[c.id] ? fechasCruces[c.id].toLocaleString() : "Sin horario"}
+                    </p>
                     <input
                       className='input-marcador'
                       type="text"
@@ -530,52 +614,50 @@ const generarTablaPosiciones = () => {
               )}
             </ul>
           </div>
-          <div className="resultados">
-  <h2>Partidos jugados y por jugar</h2>
-  {todosCruces.length === 0 ? (
-    <p>No hay cruces generados</p>
-  ) : (
-    <div className="grid-canchas">
-      {[...Array(numCanchas)].map((_, i) => {
-        const cancha = `cancha${i + 1}`;
-        const partidosEnCancha = todosCruces.filter(
-          c => (canchasCruces[c.id] || "") === cancha
-        );
 
-        return (
-          <div key={cancha} className="columna-cancha">
-            <h3>🏟️ Cancha {i + 1}</h3>
-            {partidosEnCancha.length > 0 ? (
-              <ul className="lista-partidos-cancha">
-                {partidosEnCancha
-                  .sort((a, b) => {
-                    const fechaA = fechasCruces[a.id]?.getTime() || Infinity;
-                    const fechaB = fechasCruces[b.id]?.getTime() || Infinity;
-                    return fechaA - fechaB;
-                  })
-                  .map(c => (
-                    <li key={c.id} className="li-partido">
-                      {c.equipoA} vs {c.equipoB} <br />
-                      <span className="detalle-partido">
-                        {fechasCruces[c.id]
-                          ? fechasCruces[c.id].toLocaleString()
-                          : "Sin fecha"}{" "}
-                        - {c.categoria} - {c.fase} - Zona {c.zona}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
+          <div className="resultados">
+            <h2>Partidos jugados y por jugar</h2>
+            {todosCruces.length === 0 ? (
+              <p>No hay cruces generados</p>
             ) : (
-              <p className="sin-partidos">Sin partidos</p>
+              <div className="grid-canchas">
+                {[...Array(numCanchas)].map((_, i) => {
+                  const cancha = `cancha${i + 1}`;
+
+                  const crucesParaVista = todosCruces
+                    .map(c => ({
+                      ...c,
+                      fechaHora: fechasCruces[c.id] || (c.fechaHora?.toDate ? c.fechaHora.toDate() : new Date()),
+                      cancha: canchasCruces[c.id] || c.cancha || ""
+                    }))
+                    .filter(c => c.cancha === cancha);
+
+                  crucesParaVista.sort((a, b) => a.fechaHora - b.fechaHora);
+
+                  return (
+                    <div key={cancha} className="columna-cancha">
+                      <h3>🏟️ Cancha {i + 1}</h3>
+                      {crucesParaVista.length > 0 ? (
+                        <ul className="lista-partidos-cancha">
+                          {crucesParaVista.map(c => (
+                            <li key={c.id} className="li-partido">
+                              {c.equipoA} vs {c.equipoB} <br />
+                              <span className="detalle-partido">
+                                {c.fechaHora ? c.fechaHora.toLocaleString() : "Sin fecha"} -{" "}
+                                <strong>categoria: {c.categoria}</strong>, fase: {c.fase}, zona: {c.zona}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="sin-partidos">Sin partidos</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
-        );
-      })}
-    </div>
-  )}
-</div>
-
-
 
           <div className="resultados">
             <h2>Resultados</h2>
@@ -604,11 +686,13 @@ const generarTablaPosiciones = () => {
               ))}
             </ul>
           </div>
+
         </div>
         <ToastContainer />
       </div>
     </>
   );
+
 };
 
 export default Cruces;

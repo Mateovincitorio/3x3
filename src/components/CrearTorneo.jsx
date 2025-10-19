@@ -4,7 +4,8 @@ import Navbar from './Navbar';
 import './crearTorneo.css';
 import './cruces.css';
 import { db } from '../firebarseConfig.js';
-import { collection, addDoc, getDocs, where, query, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, where, query, setDoc, doc } from 'firebase/firestore';
+
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Cruces from './Cruces.jsx';
@@ -28,6 +29,8 @@ const CrearTorneo = () => {
   const [fechaInicioTorneo, setFechaInicioTorneo] = useState('');
   const [fechaFinTorneo, setFechaFinTorneo] = useState('');
   const [canchasTorneo, setCanchasTorneo] = useState(0);
+  const [zonasTorneo, setZonasTorneo] = useState(0)
+  
 
   useEffect(() => {
     const fetchTorneos = async () => {
@@ -44,6 +47,7 @@ const CrearTorneo = () => {
     };
     fetchTorneos();
   }, []);
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,88 +57,93 @@ const CrearTorneo = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // Verificar duplicados en todas las fases
-      const fases = ["fase_de_grupos", "semifinales", "finales"];
-      let duplicado = false;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    // Verificar duplicados en todas las fases
+    const fases = ["fase_de_grupos", "semifinales", "finales"];
+    let duplicado = false;
 
-      for (let fase of fases) {
-        const q = query(
-          collection(db, `torneos/${equipo.torneo}/${fase}/${equipo.categoria}/equipos`),
-          where("nombre", "==", equipo.nombre)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          duplicado = true;
-          break;
-        }
-      }
-
-      if (duplicado) {
-        toast.error('Ya existe un equipo con el mismo nombre en esta categoría.', {
-          theme: "colored",
-          transition: Bounce,
-          style: { backgroundColor: '#800080', color: '#fff' }
-        });
-        return;
-      }
-
-      // Guardar el equipo en la fase seleccionada -> categoría -> equipos
-      const docRef = await addDoc(
-        collection(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/equipos`),
-        equipo
+    for (let fase of fases) {
+      const q = query(
+        collection(db, `torneos/${equipo.torneo}/${fase}/${equipo.categoria}/equipos`),
+        where("nombre", "==", equipo.nombre)
       );
-      await addDoc(collection(db, `torneos/${equipo.torneo}/todosLosEquipos`), equipo);
-      await addDoc(
-        collection(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/zonas/${equipo.zona}/equipos`),
-        equipo
-      );
-      // Crear jugadores
-      const jugadoresArray = [
-        equipo.jugador1,
-        equipo.jugador2,
-        equipo.jugador3,
-        equipo.jugador4
-      ];
-
-      for (let jugador of jugadoresArray) {
-        if (jugador.trim() !== "") {
-          await addDoc(collection(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/jugadores`), {
-            nombre: jugador,
-            equipoId: docRef.id,
-            categoria: equipo.categoria
-          });
-        }
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        duplicado = true;
+        break;
       }
-
-      setEquipo({
-        nombre: '',
-        jugador1: '',
-        jugador2: '',
-        jugador3: '',
-        jugador4: '',
-        categoria: '',
-        fase: '',
-        torneo: '',
-        zona: ''
-      });
-
-      toast.success('Equipo y jugadores creados correctamente', {
-        theme: "colored",
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
-
-    } catch (error) {
-      toast.error('Ocurrió un error al crear el equipo', {
-        theme: "colored",
-        transition: Bounce,
-        style: { backgroundColor: '#800080', color: '#fff' }
-      });
     }
-  };
+
+    if (duplicado) {
+      toast.error('Ya existe un equipo con el mismo nombre en esta categoría.', {
+        theme: "colored",
+        transition: Bounce,
+        style: { backgroundColor: '#800080', color: '#fff' }
+      });
+      return;
+    }
+
+    // 🔹 Generar ID único para el equipo
+    const equipoId = doc(collection(db, `torneos/${equipo.torneo}/todosLosEquipos`)).id;
+
+    // Datos del equipo
+    const nuevoEquipo = { ...equipo };
+
+    // 🔹 Guardar en las 3 ubicaciones con el mismo ID
+    await Promise.all([
+      setDoc(doc(db, `torneos/${equipo.torneo}/todosLosEquipos`, equipoId), nuevoEquipo),
+      setDoc(doc(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/equipos`, equipoId), nuevoEquipo),
+      setDoc(doc(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/zonas/${equipo.zona}/equipos`, equipoId), nuevoEquipo)
+    ]);
+
+    // Crear jugadores
+    const jugadoresArray = [
+      equipo.jugador1,
+      equipo.jugador2,
+      equipo.jugador3,
+      equipo.jugador4
+    ];
+
+    for (let jugador of jugadoresArray) {
+      if (jugador.trim() !== "") {
+        await addDoc(collection(db, `torneos/${equipo.torneo}/${equipo.fase}/${equipo.categoria}/jugadores`), {
+          nombre: jugador,
+          equipoId: equipoId,
+          categoria: equipo.categoria
+        });
+      }
+    }
+
+    setEquipo({
+      nombre: '',
+      jugador1: '',
+      jugador2: '',
+      jugador3: '',
+      jugador4: '',
+      categoria: '',
+      fase: '',
+      torneo: '',
+      zona: ''
+    });
+
+    toast.success('Equipo y jugadores creados correctamente', {
+      theme: "colored",
+      transition: Bounce,
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+
+  } catch (error) {
+    toast.error('Ocurrió un error al crear el equipo', {
+      theme: "colored",
+      transition: Bounce,
+      style: { backgroundColor: '#800080', color: '#fff' }
+    });
+    console.error(error);
+  }
+};
+
 
   // Nuevo: crear torneo
   const handleCrearTorneo = async (e) => {
@@ -142,11 +151,13 @@ const CrearTorneo = () => {
     try {
       // Guardar torneo con fechas
       const numCanchas = Number(canchasTorneo);
+      const numZonas = Number(zonasTorneo);
       const torneoData = {
         nombre: nombreTorneo,
         fechaInicio: fechaInicioTorneo,
         fechaFin: fechaFinTorneo,
-        canchas: numCanchas
+        canchas: numCanchas,
+        zonas: numZonas
       };
       await addDoc(collection(db, "torneos"), torneoData);
       setCanchasTorneo(numCanchas);
@@ -181,6 +192,7 @@ const CrearTorneo = () => {
         <div className="formulario">
           {/* Formulario para crear torneo */}
           <form onSubmit={handleCrearTorneo} style={{ marginBottom: '2rem' }}>
+            <h4 className='h4input'>Nombre del torneo</h4>
             <input
               type="text"
               value={nombreTorneo}
@@ -188,6 +200,7 @@ const CrearTorneo = () => {
               placeholder="Nombre del torneo"
               required
             />
+            <h4 className='h4input'>Fecha de inicio</h4>
             <input
               type="datetime-local"
               value={fechaInicioTorneo}
@@ -195,13 +208,15 @@ const CrearTorneo = () => {
               placeholder="Fecha de inicio"
               required
             />
-            <input
+            <h4 className='h4input'>Fecha de fin</h4>
+            <input 
               type="datetime-local"
               value={fechaFinTorneo}
               onChange={e => setFechaFinTorneo(e.target.value)}
               placeholder="Fecha de fin"
               required
             />
+            <h4 className='h4input'>Número de canchas</h4>
             <input 
               type="number" 
               name="numCanchas" 
@@ -209,66 +224,90 @@ const CrearTorneo = () => {
               onChange={e => setCanchasTorneo(Number(e.target.value))} 
               placeholder='Introduce numero de canchas (maximo 8)' 
             />
+            <h4 className='h4input'>Número de zonas</h4>
+            <input 
+              type="number" 
+              name="numZonas"
+              value={zonasTorneo}
+              min={1}
+              onChange={e=>setZonasTorneo(Number(e.target.value))}/>
             <button type="submit" className="boton">Crear Torneo</button>
           </form>
           {/* Formulario para crear equipo */}
           <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              name="nombre"
-              value={equipo.nombre}
-              onChange={handleChange}
-              placeholder="Nombre del equipo"
-              required
-            />
-            <select
-              name="categoria"
-              className="select-list"
-              value={equipo.categoria}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Seleccionar categoría</option>
-              <option value="U14">U14</option>
-              <option value="U16">U16</option>
-              <option value="U18">U18</option>
-              <option value="Senior">Senior</option>
-            </select>
-            <select
-              name="fase"
-              className="select-list"
-              value={equipo.fase}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Seleccionar fase</option>
-              <option value="fase_de_grupos">Fase de Grupos</option>
-              <option value="semifinales">Semifinales</option>
-              <option value="finales">Final</option>
-            </select>
-            <select
-              name="torneo"
-              className="select-list"
-              value={equipo.torneo}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Seleccionar torneo</option>
-              {torneos.map(t => (
-                <option key={t.id} value={t.id}>{t.nombre || t.id}</option>
-              ))}
-            </select>
-            <select name="zona" id="zona" className="select-list" onChange={handleChange} required>
-              <option value="">Seleccionar zona</option>
-              <option value="a">a</option>
-              <option value="b">b</option>
-              <option value="c">c</option>
-              <option value="d">d</option>
-            </select>
-            <button className="crearEquipo" type="submit">Crear Equipo</button>
-          </form>
+  <input
+    type="text"
+    name="nombre"
+    value={equipo.nombre}
+    onChange={handleChange}
+    placeholder="Nombre del equipo"
+    required
+  />
+
+  <select
+    name="categoria"
+    className="select-list"
+    value={equipo.categoria}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Seleccionar categoría</option>
+    <option value="U14">U14</option>
+    <option value="U16">U16</option>
+    <option value="U18">U18</option>
+    <option value="Senior">Senior</option>
+  </select>
+
+  <select
+    name="fase"
+    className="select-list"
+    value={equipo.fase}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Seleccionar fase</option>
+    <option value="fase_de_grupos">Fase de Grupos</option>
+    <option value="semifinales">Semifinales</option>
+    <option value="finales">Final</option>
+  </select>
+
+  <select
+    name="torneo"
+    className="select-list"
+    value={equipo.torneo}
+    onChange={(e) => {
+      handleChange(e);
+      setEquipo(prev => ({ ...prev, zona: "" })); // reset zona al cambiar torneo
+    }}
+    required
+  >
+    <option value="">Seleccionar torneo</option>
+    {torneos.map(t => (
+      <option key={t.id} value={t.id}>{t.nombre || t.id}</option>
+    ))}
+  </select>
+
+  <select
+    name="zona"
+    className="select-list"
+    value={equipo.zona}
+    onChange={handleChange}
+    required
+    disabled={!equipo.torneo} // deshabilitar si no se seleccionó torneo
+  >
+    <option value="">Seleccionar zona</option>
+    {equipo.torneo && torneos.find(t => t.id === equipo.torneo)?.zonas > 0 &&
+      [...Array(torneos.find(t => t.id === equipo.torneo).zonas)].map((_, i) => (
+        <option key={i} value={`zona${i + 1}`}>Zona {i + 1}</option>
+      ))
+    }
+  </select>
+
+  <button className="crearEquipo" type="submit">Crear Equipo</button>
+</form>
+
         </div>
-      <Cruces torneos={torneos} canchasTorneo={canchasTorneo} />
+      <Cruces torneos={torneos} canchasTorneo={canchasTorneo} numZonas={zonasTorneo} />
       </div>
       <ToastContainer />
     </>
