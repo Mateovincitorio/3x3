@@ -187,51 +187,51 @@ const handleSubmit = async (e) => {
       <Navbar />
       <div className="body">
         <div className="contenedor">
-          <h1 className="añadirh1">Añadí los equipos a tu Torneo</h1>
+          <h1 className="añadirh1">add teams to your tournament</h1>
         </div>
         <div className="formulario">
           {/* Formulario para crear torneo */}
           <form onSubmit={handleCrearTorneo} style={{ marginBottom: '2rem' }}>
-            <h4 className='h4input'>Nombre del torneo</h4>
+            <h4 className='h4input'>Name of the tournament</h4>
             <input
               type="text"
               value={nombreTorneo}
               onChange={e => setNombreTorneo(e.target.value)}
-              placeholder="Nombre del torneo"
+              placeholder="Name of the tournament"
               required
             />
-            <h4 className='h4input'>Fecha de inicio</h4>
+            <h4 className='h4input'>Start Date</h4>
             <input
               type="datetime-local"
               value={fechaInicioTorneo}
               onChange={e => setFechaInicioTorneo(e.target.value)}
-              placeholder="Fecha de inicio"
+              placeholder="Start Date"
               required
             />
-            <h4 className='h4input'>Fecha de fin</h4>
+            <h4 className='h4input'>End Date</h4>
             <input 
               type="datetime-local"
               value={fechaFinTorneo}
               onChange={e => setFechaFinTorneo(e.target.value)}
-              placeholder="Fecha de fin"
+              placeholder="End Date"
               required
             />
-            <h4 className='h4input'>Número de canchas</h4>
+            <h4 className='h4input'>NNumber of Courts</h4>
             <input 
               type="number" 
               name="numCanchas" 
               value={canchasTorneo} 
               onChange={e => setCanchasTorneo(Number(e.target.value))} 
-              placeholder='Introduce numero de canchas (maximo 8)' 
+              placeholder='Introduce number of courts (max 8)' 
             />
-            <h4 className='h4input'>Número de zonas</h4>
+            <h4 className='h4input'>Number of Zones</h4>
             <input 
               type="number" 
               name="numZonas"
               value={zonasTorneo}
               min={1}
               onChange={e=>setZonasTorneo(Number(e.target.value))}/>
-            <button type="submit" className="boton">Crear Torneo</button>
+            <button type="submit" className="boton">Create Tournament</button>
           </form>
           {/* Formulario para crear equipo */}
           <form onSubmit={handleSubmit}>
@@ -240,7 +240,7 @@ const handleSubmit = async (e) => {
     name="nombre"
     value={equipo.nombre}
     onChange={handleChange}
-    placeholder="Nombre del equipo"
+    placeholder="Team Name"
     required
   />
 
@@ -251,7 +251,7 @@ const handleSubmit = async (e) => {
     onChange={handleChange}
     required
   >
-    <option value="">Seleccionar categoría</option>
+    <option value="">Select Category</option>
     <option value="U14">U14</option>
     <option value="U16">U16</option>
     <option value="U18">U18</option>
@@ -265,7 +265,7 @@ const handleSubmit = async (e) => {
     onChange={handleChange}
     required
   >
-    <option value="">Seleccionar fase</option>
+    <option value="">Select Phase</option>
     <option value="fase_de_grupos">Fase de Grupos</option>
     <option value="semifinales">Semifinales</option>
     <option value="finales">Final</option>
@@ -281,7 +281,7 @@ const handleSubmit = async (e) => {
     }}
     required
   >
-    <option value="">Seleccionar torneo</option>
+    <option value="">Select Tournament</option>
     {torneos.map(t => (
       <option key={t.id} value={t.id}>{t.nombre || t.id}</option>
     ))}
@@ -295,7 +295,7 @@ const handleSubmit = async (e) => {
     required
     disabled={!equipo.torneo} // deshabilitar si no se seleccionó torneo
   >
-    <option value="">Seleccionar zona</option>
+    <option value="">Select Zone</option>
     {equipo.torneo && torneos.find(t => t.id === equipo.torneo)?.zonas > 0 &&
       [...Array(torneos.find(t => t.id === equipo.torneo).zonas)].map((_, i) => (
         <option key={i} value={`zona${i + 1}`}>Zona {i + 1}</option>
@@ -303,7 +303,7 @@ const handleSubmit = async (e) => {
     }
   </select>
 
-  <button className="crearEquipo" type="submit">Crear Equipo</button>
+  <button className="crearEquipo" type="submit">Create Team</button>
 </form>
 
         </div>

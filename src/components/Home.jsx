@@ -12,17 +12,17 @@ const Home = () => {
     <>
       <Navbar />
       <div className="home">
-        <h1 className="torneo">Torneo 3x3</h1>
+        <h1 className="torneo">3x3 tournament</h1>
         <div className="cards">
           <div className="card">
-            <h2>Agrega equipos</h2>
-            <p>Agrega los equipos que participarán en el torneo.</p>
-            <Link to="/crear" className="link">Ir a Agregar equipos</Link>
+            <h2>Add Teams</h2>
+            <p>Add the teams that will participate in the tournament.</p>
+            <Link to="/crear" className="link">Go to Add Teams</Link>
         </div>
         <div className="card">
-          <h2>Equipos</h2>
-          <p>Visualiza y gestiona los equipos participantes.</p>
-          <Link to="/equipos" className="link">Ir a Equipos</Link>
+          <h2>Teams</h2>
+          <p>View and manage the participating teams.</p>
+          <Link to="/equipos" className="link">Go to Teams</Link>
         </div>
         </div>
       </div>

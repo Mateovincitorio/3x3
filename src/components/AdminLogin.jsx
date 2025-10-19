@@ -55,7 +55,7 @@ export default function AdminLogin({ onLogin }) {
           className="login-input"
         />
         <button type="submit" className="boton">
-          Iniciar Sesión
+          Log in
         </button>
       </form>
       {error && <p className="login-error">{error}</p>}

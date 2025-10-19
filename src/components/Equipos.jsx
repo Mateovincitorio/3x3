@@ -262,19 +262,19 @@ const handleDelete = async (id, e) => {
       <div className="body">
         <div className="contenedor-div">
           <select value={torneoSel} onChange={e => setTorneoSel(e.target.value)} className="select-list">
-            <option value="">Seleccionar torneo</option>
+            <option value="">Select Tournament</option>
             {torneos.map(t => <option key={t.id} value={t.id}>{t.nombre || t.id}</option>)}
           </select>
 
           <select value={faseSel} onChange={e => setFaseSel(e.target.value)} className="select-list">
-            <option value="">Seleccionar fase</option>
+            <option value="">Select Phase</option>
             <option value="fase_de_grupos">Fase de Grupos</option>
             <option value="semifinales">Semifinales</option>
             <option value="finales">Finales</option>
           </select>
 
           <select value={categoriaSel} onChange={e => setCategoriaSel(e.target.value)} className="select-list">
-            <option value="">Seleccionar categoría</option>
+            <option value="">Select Category</option>
             <option value="U14">U14</option>
             <option value="U16">U16</option>
             <option value="U18">U18</option>
@@ -282,13 +282,13 @@ const handleDelete = async (id, e) => {
           </select>
 
           <select value={zonaSel} onChange={e => setZonaSel(e.target.value)} className="select-list">
-            <option value="">Seleccionar zona</option>
+            <option value="">Select Zone</option>
             {zonas.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
         </div>
 
         <div className="listaEquipos">
-          <h1 className='equipos'>Equipos Participantes</h1>
+          <h1 className='equipos'>Participating Teams</h1>
           <div className="contenedorEquipos">
             {equipos.map((equipo) => (
               <div className="cardEquipo" key={equipo.id}>
@@ -303,7 +303,7 @@ const handleDelete = async (id, e) => {
                       className="select-list"
                       value={formData.categoria}
                       onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}>
-                      <option value="">Seleccionar categoría</option>
+                      <option value="">Select Category</option>
                       <option value="U14">U14</option>
                       <option value="U16">U16</option>
                       <option value="U18">U18</option>
@@ -313,7 +313,7 @@ const handleDelete = async (id, e) => {
                       className="select-list"
                       value={formData.fase}
                       onChange={(e) => setFormData({ ...formData, fase: e.target.value })}>
-                      <option value="">Seleccionar fase</option>
+                      <option value="">Select Phase</option>
                       <option value="fase_de_grupos">Fase de Grupos</option>
                       <option value="semifinales">Semifinales</option>
                       <option value="finales">Finales</option>
@@ -322,17 +322,17 @@ const handleDelete = async (id, e) => {
                       className="select-list"
                       value={formData.zona}
                       onChange={(e) => setFormData({ ...formData, zona: e.target.value })}>
-                      <option value="">Seleccionar zona</option>
+                      <option value="">Select Zone</option>
                       {zonas.map((z) => <option key={z} value={z}>{z}</option>)}
                     </select>
-                    <button className="boton-editar" type="submit">Guardar</button>
-                    <button className="boton-editar" type="button" onClick={() => setEditando(null)}>Cancelar</button>
+                    <button className="boton-editar" type="submit">Save</button>
+                    <button className="boton-editar" type="button" onClick={() => setEditando(null)}>Cancel</button>
                   </form>
                 ) : (
                   <>
                     <h2>{equipo.nombre}</h2>
-                    <button className="boton" onClick={(e) => handleDelete(equipo.id, e)}>Eliminar</button>
-                    <button className="boton" onClick={() => handleEdit(equipo)}>Editar</button>
+                    <button className="boton" onClick={(e) => handleDelete(equipo.id, e)}>Delete</button>
+                    <button className="boton" onClick={() => handleEdit(equipo)}>Edit</button>
                   </>
                 )}
               </div>

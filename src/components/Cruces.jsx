@@ -549,64 +549,64 @@ const generarCruces = async () => {
         <div className="body-cruces">
           <div className="contenedor">
             <div className="contenedor-div">
-              <button className="boton" onClick={generarCruces} disabled={equipos.length < 2}>Generar Cruces</button>
+              <button className="boton" onClick={generarCruces} disabled={equipos.length < 2}>Generate matchups</button>
               <select value={categoriaSel} className='select-list' onChange={e => setCategoriaSel(e.target.value)}>
-                <option value="">Categoría</option>
+                <option value="">Category</option>
                 <option value="U14">U14</option>
                 <option value="U16">U16</option>
                 <option value="U18">U18</option>
                 <option value="Senior">Senior</option>
               </select>
               <select value={faseSel} className='select-list' onChange={e => setFaseSel(e.target.value)}>
-                <option value="">Fase</option>
+                <option value="">Phase</option>
                 <option value="fase_de_grupos">Fase de Grupos</option>
                 <option value="semifinales">Semifinales</option>
                 <option value="finales">Finales</option>
               </select>
               <select value={torneoSel} className='select-list' onChange={e => setTorneoSel(e.target.value)}>
-                <option value="">Torneo</option>
+                <option value="">Tournament</option>
                 {torneos.map(t => <option key={t.id} value={t.id}>{t.nombre || t.id}</option>)}
               </select>
               <select value={zonaSel} className='select-list' onChange={e => setZonaSel(e.target.value)}>
-                <option value="">Zona</option>
+                <option value="">Zone</option>
                 {zonas.map(z => (
                   <option key={z} value={z}>{z}</option>
                 ))}
               </select>
 
-              <button className="boton" onClick={eliminarColecciones}>Limpiar cruces y ganadores</button>
+              <button className="boton" onClick={eliminarColecciones}>Clear matchups and winners</button>
             </div>
             <ul className="lista-cruces">
               {cruces.length === 0 ? (
-                <li>No hay cruces generados</li>
+                <li>No matchups generated</li>
               ) : (
                 cruces.map(c => (
                   <li key={c.id} className="card cruce">
                     <p>{c.equipoA} <br />vs <br /> {c.equipoB}</p>
                     <p>
-                      Horario: {fechasCruces[c.id] ? fechasCruces[c.id].toLocaleString() : "Sin horario"}
+                      Daytime: {fechasCruces[c.id] ? fechasCruces[c.id].toLocaleString() : "no scheduled"}
                     </p>
                     <input
                       className='input-marcador'
                       type="text"
-                      placeholder="Ej: 21-10"
+                      placeholder="Ex: 21-10"
                       value={marcadores[c.id] || ""}
                       onChange={e => handleMarcadorChange(c.id, e.target.value)}
                     />
-                    <button onClick={() => handleResultado(c.equipoA, c.equipoB, c.equipoA, marcadores[c.id] || "")}>Ganador: {c.equipoA}</button>
-                    <button onClick={() => handleResultado(c.equipoA, c.equipoB, c.equipoB, marcadores[c.id] || "")}>Ganador: {c.equipoB}</button>
-                    <DateTimePicker 
-                      value={fechasCruces[c.id]} 
-                      onChange={date => handleFechaChange(c.id, date)} 
+                    <button onClick={() => handleResultado(c.equipoA, c.equipoB, c.equipoA, marcadores[c.id] || "")}>Winner: {c.equipoA}</button>
+                    <button onClick={() => handleResultado(c.equipoA, c.equipoB, c.equipoB, marcadores[c.id] || "")}>Winner: {c.equipoB}</button>
+                    <DateTimePicker
+                      value={fechasCruces[c.id]}
+                      onChange={date => handleFechaChange(c.id, date)}
                     />
                     <select
                       value={canchasCruces[c.id] || ""}
                       className='select-list cancha'
                       onChange={e => handleCanchaChange(c.id, e.target.value)}
                     >
-                      <option value="">Cancha</option>
+                      <option value="">Court</option>
                       {[...Array(numCanchas)].map((_, i) => (
-                        <option key={i} value={`cancha${i+1}`}>Cancha {i+1}</option>
+                        <option key={i} value={`cancha${i+1}`}>Court {i+1}</option>
                       ))}
                     </select>
                   </li>
@@ -616,9 +616,9 @@ const generarCruces = async () => {
           </div>
 
           <div className="resultados">
-            <h2>Partidos jugados y por jugar</h2>
+            <h2>Schedule</h2>
             {todosCruces.length === 0 ? (
-              <p>No hay cruces generados</p>
+              <p>No matchups generated</p>
             ) : (
               <div className="grid-canchas">
                 {[...Array(numCanchas)].map((_, i) => {
@@ -636,21 +636,21 @@ const generarCruces = async () => {
 
                   return (
                     <div key={cancha} className="columna-cancha">
-                      <h3>🏟️ Cancha {i + 1}</h3>
+                      <h3>🏟️ Court {i + 1}</h3>
                       {crucesParaVista.length > 0 ? (
                         <ul className="lista-partidos-cancha">
                           {crucesParaVista.map(c => (
                             <li key={c.id} className="li-partido">
                               {c.equipoA} vs {c.equipoB} <br />
                               <span className="detalle-partido">
-                                {c.fechaHora ? c.fechaHora.toLocaleString() : "Sin fecha"} -{" "}
-                                <strong>categoria: {c.categoria}</strong>, fase: {c.fase}, zona: {c.zona}
+                                {c.fechaHora ? c.fechaHora.toLocaleString() : "No scheduled"} -{" "}
+                                <strong>category: {c.categoria}</strong>, phase: {c.fase}, zone: {c.zona}
                               </span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="sin-partidos">Sin partidos</p>
+                        <p className="sin-partidos">No matches</p>
                       )}
                     </div>
                   );
@@ -660,28 +660,28 @@ const generarCruces = async () => {
           </div>
 
           <div className="resultados">
-            <h2>Resultados</h2>
+            <h2>Results</h2>
             {resultados.length === 0 ? (
-              <p>No hay resultados aún</p>
+              <p>No results yet</p>
             ) : (
               resultados.map((r, index) => (
                 <h3 key={index}>
                   {r.equipoA} vs {r.equipoB} - 
-                  Ganador: <strong>{r.ganador}</strong> - 
-                  Puntos: <strong>{r.marcador}</strong>
+                  Winner: <strong>{r.ganador}</strong> - 
+                  Points: <strong>{r.marcador}</strong>
                 </h3>
               ))
             )}
           </div>
 
           <div className="tabla-posiciones">
-            <h2>Tabla de posiciones de {faseSel} - Zona {zonaSel}</h2>
-            <button className='boton' onClick={generarTablaPosiciones}>Crear tabla</button>
+            <h2>Standings Table of {faseSel} - Zone {zonaSel}</h2>
+            <button className='boton' onClick={generarTablaPosiciones}>Create Table</button>
             <ul>
               {tablaPosiciones.map((e, i) => (
                 <li key={i} className="grillali">
-                  {i + 1}. {e.nombre} - Ganados: {e.ganados}, Perdidos: {e.perdidos}, 
-                  Puntos a favor: {e.puntosAFavor}, Puntos en contra: {e.puntosEnContra}, diferencia: {e.diferencia}
+                  {i + 1}. {e.nombre} - Wins: {e.ganados}, Losses: {e.perdidos}, 
+                  Points For: {e.puntosAFavor}, Points Against: {e.puntosEnContra}, Difference: {e.diferencia}
                 </li>
               ))}
             </ul>
